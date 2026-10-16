@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Soft, minimalist palette shared across the app. */
+@theme {
+  --color-app: #fafaf9; /* off-white background */
+  --color-ink: #1e293b; /* dark slate text */
+  --color-brand: #0f766e; /* primary accent (teal) */
+  --color-brand-dark: #115e59;
+}
+
+body {
+  background-color: var(--color-app);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
