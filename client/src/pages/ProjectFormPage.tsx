@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ErrorState, LoadingState } from '../components/Feedback';
-import { Layout, PageHeader } from '../components/Layout';
+import { PageHeader } from '../components/Layout';
 import { SummaryCard } from '../components/SummaryCard';
 import { Button } from '../components/ui/Button';
 import { Field } from '../components/ui/Field';
@@ -137,21 +137,21 @@ export function ProjectFormPage() {
 
   if (isEdit && isPending) {
     return (
-      <Layout>
+      <>
         <LoadingState label="Cargando proyecto…" />
-      </Layout>
+      </>
     );
   }
 
   if (isEdit && (isError || !project)) {
     return (
-      <Layout>
+      <>
         <PageHeader title="Editar proyecto" backTo="/" />
         <ErrorState
           message={error?.message ?? 'Proyecto no encontrado.'}
           onRetry={() => void refetch()}
         />
-      </Layout>
+      </>
     );
   }
 
@@ -252,7 +252,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
   }
 
   return (
-    <Layout>
+    <>
       <PageHeader
         title={project ? 'Editar proyecto' : 'Nuevo proyecto'}
         subtitle={project ? project.name : 'Registra un lote y sus números.'}
@@ -582,6 +582,6 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
           </Button>
         </div>
       </form>
-    </Layout>
+    </>
   );
 }

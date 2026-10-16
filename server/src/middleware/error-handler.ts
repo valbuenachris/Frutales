@@ -32,6 +32,11 @@ export function errorHandler(
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2002') {
+      // Unique constraint (duplicate catalog name).
+      res.status(409).json({ error: { message: 'Ya existe un registro con ese nombre' } });
+      return;
+    }
     if (error.code === 'P2025') {
       res.status(404).json({ error: { message: 'Recurso no encontrado' } });
       return;
