@@ -47,10 +47,59 @@ model Project {
   /// "Vencido" over time without any database write).
   paymentStatus String?
 
+  // ---------------------------------------------------------------------------
+  // Catálogo maestro: optional FKs, linked later (the free-text fields below
+  // stay authoritative for now to keep existing data intact).
+  // ---------------------------------------------------------------------------
+  productId String?
+  processId String?
+  clientId  String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  process   Process? @relation(fields: [processId], references: [id], onDelete: SetNull)
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
   @@index([paymentStatus])
   @@map("projects")
+}
+
+/// Catálogo de productos (frutas o productos procesados).
+model Product {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("products")
+}
+
+/// Catálogo de tipos de proceso (p. ej. "Melada", "Deshidratada").
+model Process {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("processes")
+}
+
+/// Catálogo de clientes (compradores registrados en las ventas).
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("clients")
 }

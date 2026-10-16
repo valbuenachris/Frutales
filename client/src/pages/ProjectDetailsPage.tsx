@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ErrorState, LoadingState } from '../components/Feedback';
-import { Layout, PageHeader } from '../components/Layout';
+import { PageHeader } from '../components/Layout';
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
 import { SummaryCard } from '../components/SummaryCard';
 import { Button } from '../components/ui/Button';
@@ -17,21 +17,21 @@ export function ProjectDetailsPage() {
 
   if (isPending) {
     return (
-      <Layout>
+      <>
         <LoadingState label="Cargando proyecto…" />
-      </Layout>
+      </>
     );
   }
 
   if (isError || !project) {
     return (
-      <Layout>
+      <>
         <PageHeader title="Proyecto" backTo="/" />
         <ErrorState
           message={error?.message ?? 'Proyecto no encontrado.'}
           onRetry={() => void refetch()}
         />
-      </Layout>
+      </>
     );
   }
 
@@ -51,7 +51,7 @@ export function ProjectDetailsPage() {
   };
 
   return (
-    <Layout>
+    <>
       <PageHeader title={project.name} backTo="/" />
 
       <div className="space-y-5">
@@ -177,7 +177,7 @@ export function ProjectDetailsPage() {
           ) : null}
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 
