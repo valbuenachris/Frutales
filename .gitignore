@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Archivos de compilación
+dist/
+build/
+*.log
+
+# Variables de entorno (¡NUNCA subir esto!)
+.env
+.env.local
+.env.*.local
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal

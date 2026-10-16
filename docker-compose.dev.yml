@@ -1,0 +1,51 @@
+# Frutales — development override.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Bind-mounts source code for hot reload and publishes all ports to the host.
+# Note: host port 5432 must be free (stop any local PostgreSQL first).
+services:
+  db:
+    ports:
+      - "5432:5432" # allow local tools (psql, Prisma Studio) to connect
+
+  server:
+    build:
+      context: ./server
+      target: build # dev image: includes tsx, TypeScript and the Prisma CLI
+    command: ["npm", "run", "dev"] # tsx watch src/index.ts
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      PORT: 4000
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./server/src:/app/src
+      - ./server/prisma:/app/prisma
+
+  client:
+    build:
+      context: ./client
+      target: build # dev image: includes the Vite dev server
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    environment:
+      # The browser calls the API through the published host port,
+      # so hot reload works without rebuilding nginx.
+      VITE_API_URL: http://localhost:4000/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client/src:/app/src
+      - ./client/index.html:/app/index.html
+      - ./client/vite.config.ts:/app/vite.config.ts
+    depends_on:
+      server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
