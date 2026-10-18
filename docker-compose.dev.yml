@@ -19,6 +19,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
       PORT: 4000
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
     ports:
       - "4000:4000"
     volumes:
@@ -31,9 +33,10 @@ services:
       target: build # dev image: includes the Vite dev server
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
     environment:
-      # The browser calls the API through the published host port,
-      # so hot reload works without rebuilding nginx.
-      VITE_API_URL: http://localhost:4000/api
+      # Same-origin /api so the httpOnly session cookie works in dev too.
+      # Vite proxies /api to the "server" service inside the compose network.
+      VITE_API_URL: /api
+      VITE_PROXY_TARGET: http://server:4000
     ports:
       - "5173:5173"
     volumes:

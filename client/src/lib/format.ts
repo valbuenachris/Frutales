@@ -26,6 +26,30 @@ const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
 /** Money, e.g. "$ 25.000". */
 export const formatMoney = (value: number): string => moneyFormatter.format(value);
 
+/** US dollars, e.g. "US$ 1,50". */
+const usdFormatter = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+/** US dollars, e.g. "US$ 1,50". */
+export const formatMoneyUsd = (value: number): string => usdFormatter.format(value);
+
+/** Compact COP for chart labels: "$ 48 mil", "$ 1,2 M". */
+export const formatMoneyCompact = (value: number): string => {
+  const abs = Math.abs(value);
+  const prefix = value < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    return `${prefix}$ ${qtyFormatter.format(Math.round((abs / 1_000_000) * 10) / 10)} M`;
+  }
+  if (abs >= 100_000) {
+    return `${prefix}$ ${qtyFormatter.format(Math.round(abs / 1000))} mil`;
+  }
+  return formatMoney(value);
+};
+
 /** Kilograms, up to three decimals, e.g. "8 kg" / "1.500,5 kg". */
 export const formatQty = (value: number): string => `${qtyFormatter.format(value)} kg`;
 

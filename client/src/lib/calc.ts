@@ -29,17 +29,23 @@ export function computeNetYield(initialQty: number, reductionPct: number): numbe
 /**
  * Cost, and (only when a sale price is provided) revenue and profit.
  * Pass `sellingPrice = null` while Fase 2 is not registered.
+ *
+ * `totalCost` is ONLY the purchase (initialQty × purchasePrice). Registered
+ * expenses (`expensesTotal`) are subtracted from the profit and are summed
+ * separately for the per-kg cost line: (totalCost + expensesTotal) / netYield.
  */
 export function computeTotals(
   netYield: number,
   initialQty: number,
   purchasePrice: number,
   sellingPrice: number | null,
+  expensesTotal = 0,
 ): Totals {
   const totalCost = round(initialQty * purchasePrice, 2);
   if (sellingPrice === null) {
     return { totalCost, totalRevenue: null, netProfit: null };
   }
   const totalRevenue = round(netYield * sellingPrice, 2);
-  return { totalCost, totalRevenue, netProfit: round(totalRevenue - totalCost, 2) };
+  // Profit accounts for the purchase AND the registered expenses.
+  return { totalCost, totalRevenue, netProfit: round(totalRevenue - totalCost - expensesTotal, 2) };
 }

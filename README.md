@@ -68,7 +68,8 @@ createdb frutales
 cd server
 cp .env.example .env        # then edit DATABASE_URL for your Postgres
 npm install
-npm run prisma:migrate      # creates the "projects" table + Prisma Client
+npm run prisma:migrate      # creates the tables + Prisma Client
+npm run db:seed             # optional: creates the initial admin user
 npm run dev                 # API at http://localhost:4000
 ```
 
@@ -79,8 +80,17 @@ npm run dev                 # API at http://localhost:4000
 | `DATABASE_URL` | Private PostgreSQL connection string | `postgresql://user:pass@localhost:5432/frutales?schema=public` |
 | `PORT` | API port | `4000` |
 | `CLIENT_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
+| `JWT_SECRET` | Secret used to sign session JWTs (min. 32 chars, **required**) | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
+| `JWT_EXPIRES_IN` | Session/token lifetime | `7d` |
+| `ADMIN_NAME` | Initial admin display name (seed only) | `Administrador` |
+| `ADMIN_EMAIL` | Initial admin email (seed only) | `admin@example.com` |
+| `ADMIN_PASSWORD` | Initial admin password, min. 8 chars (seed only) | `change-me-please` |
 
-Useful scripts: `npm run typecheck`, `npm run prisma:studio`, `npm run build && npm start`.
+`npm run db:seed` only creates the admin when the email does not exist yet; it
+never overwrites an existing password. Change it from the **Usuarios** screen
+after the first login.
+
+Useful scripts: `npm run typecheck`, `npm run db:seed`, `npm run prisma:studio`, `npm run build && npm start`.
 
 ### 3. Frontend
 
@@ -107,6 +117,31 @@ cd client && VITE_API_URL="https://your-api.example.com/api" npm run build   # o
 The whole stack (PostgreSQL + API + web client behind nginx) can run with Docker
 Compose. See [DOCKER.md](./DOCKER.md) for setup, deployment and backup instructions.
 
+## Authentication
+
+The API uses a signed JWT stored in the `frutales_session` **httpOnly cookie**
+(`SameSite=Lax`, `Secure` in production, 7 days by default). Except for
+`/api/health` and `/api/auth/login`, every `/api` route requires an active
+session. Users live in the `users` table with a `role` of `admin` or `usuario`;
+only admins can manage other users.
+
+Browser clients send the cookie automatically (the Vite proxy / nginx keep the
+SPA and API on the same origin). For command-line testing, store it in a cookie
+jar:
+
+```bash
+# Log in (replace with your admin credentials)
+curl -c cookies.txt -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@frutales.local","password":"TU_CLAVE_ADMIN"}'
+
+# Authenticated request
+curl -b cookies.txt http://localhost:4000/api/projects
+
+# Log out
+curl -b cookies.txt -X POST http://localhost:4000/api/auth/logout
+```
+
 ## API reference
 
 Base path: `/api`. Responses use the envelope `{ "data": ... }`; errors use
@@ -114,7 +149,14 @@ Base path: `/api`. Responses use the envelope `{ "data": ... }`; errors use
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/health` | Health check |
+| `GET` | `/api/health` | Health check (public) |
+| `POST` | `/api/auth/login` | Validate credentials, set the session cookie |
+| `POST` | `/api/auth/logout` | Clear the session cookie (204) |
+| `GET` | `/api/auth/me` | Current authenticated user |
+| `GET` | `/api/users` | List users (admin only) |
+| `POST` | `/api/users` | Create user (admin only, 201) |
+| `PUT` | `/api/users/:id` | Update user (admin only) |
+| `DELETE` | `/api/users/:id` | Delete user (admin only, 204) |
 | `GET` | `/api/projects` | List all projects (newest first) |
 | `POST` | `/api/projects` | Create project (validated DTO, 201) |
 | `GET` | `/api/projects/:id` | Project details |
@@ -124,7 +166,7 @@ Base path: `/api`. Responses use the envelope `{ "data": ... }`; errors use
 Example: the pineapple batch from the spec.
 
 ```bash
-curl -X POST http://localhost:4000/api/projects \
+curl -b cookies.txt -X POST http://localhost:4000/api/projects \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Pineapple Batch 1",

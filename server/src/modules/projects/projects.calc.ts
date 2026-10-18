@@ -19,13 +19,28 @@ export const round = (value: number, decimals: number): number => Number(value.t
 export const computeNetYield = (initialQty: number, reductionPct: number): number =>
   round(initialQty * (1 - reductionPct / 100), QTY_DECIMALS);
 
-/** Total cost = kg purchased * purchase price per kg. */
-export const computeTotalCost = (initialQty: number, purchasePrice: number): number =>
-  round(initialQty * purchasePrice, MONEY_DECIMALS);
+/**
+ * Total purchase cost in COP = kg purchased * purchase price per kg *
+ * exchange rate. Purchases registered in USD are converted with the rate
+ * captured at purchase time (`purchaseExchangeRate`); COP purchases use 1.
+ */
+export const computeTotalCost = (
+  initialQty: number,
+  purchasePrice: number,
+  exchangeRate = 1,
+): number => round(initialQty * purchasePrice * exchangeRate, MONEY_DECIMALS);
 
-/** Total revenue = kg of net yield * selling price per kg. */
-export const computeTotalRevenue = (netYield: number, sellingPrice: number): number =>
-  round(netYield * sellingPrice, MONEY_DECIMALS);
+/**
+ * Total revenue in COP = kg of net yield * selling price per kg * exchange
+ * rate. Sales registered in USD are converted with the rate captured at the
+ * moment of the sale (`exchangeRate`); COP sales pass the default 1.
+ * Example: 8 kg * US$1,50 * 4.000 COP/USD = $48.000.
+ */
+export const computeTotalRevenue = (
+  netYield: number,
+  sellingPrice: number,
+  exchangeRate = 1,
+): number => round(netYield * sellingPrice * exchangeRate, MONEY_DECIMALS);
 
 /** Net profit = total revenue - total cost (negative means loss). */
 export const computeNetProfit = (totalRevenue: number, totalCost: number): number =>
@@ -38,8 +53,18 @@ export const computeNetProfit = (totalRevenue: number, totalCost: number): numbe
 export const PAYMENT_TYPES = ['Contado', 'Crédito'] as const;
 export type PaymentType = (typeof PAYMENT_TYPES)[number];
 
-export const PAYMENT_STATUSES = ['Pendiente', 'Pagado', 'Vencido'] as const;
+export const PAYMENT_STATUSES = ['Pendiente', 'Abonado', 'Pagado', 'Vencido'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+/** Context from the registered abonos/pagos (all COP-normalized). */
+export interface PaymentStatusContext {
+  /** COP revenue of the sale; null when there is no sale. */
+  totalRevenue?: number | null;
+  /** COP sum of the payments registered against the sale. */
+  paidAmount?: number;
+  /** Whether at least one payment is registered. */
+  hasPayments?: boolean;
+}
 
 /**
  * "YYYY-MM-DD" (native date input) -> Date stored at 12:00 UTC.
@@ -50,25 +75,37 @@ export const parseDateOnly = (value: string): Date => new Date(`${value}T12:00:0
 
 /**
  * Payment status is always derived from the data (never trusted as input):
- *  - "Contado"                  -> "Pagado"
- *  - "Crédito" with a future (or today's) due date -> "Pendiente"
- *  - "Crédito" with a past due date                -> "Vencido"
- *  - no payment type            -> null (Phase 2 not registered yet)
+ *  - fully covered by payments -> "Pagado"; "Contado" without any registered
+ *    payment also counts as fully paid (legacy/automatic behavior, so a cash
+ *    sale is "Pagado" unless the user starts recording parciales);
+ *  - "Crédito" with a past due date and outstanding balance -> "Vencido";
+ *  - some payments registered (outstanding balance) -> "Abonado";
+ *  - otherwise -> "Pendiente".
+ *  - no payment type -> null (Fase 2 not registered yet)
  *
  * The due date is compared against the start of the current UTC day, so a
- * payment due today still counts as "Pendiente" until the day is over.
+ * payment due today still counts as pending until the day is over.
  */
 export function computePaymentStatus(
   paymentType: string | null | undefined,
   scheduledPaymentDate: Date | null | undefined,
+  context: PaymentStatusContext = {},
   now: Date = new Date(),
 ): PaymentStatus | null {
-  if (paymentType === 'Contado') return 'Pagado';
-  if (paymentType === 'Crédito') {
-    if (!scheduledPaymentDate) return 'Pendiente'; // defensive; validated upstream
+  if (!paymentType) return null;
+
+  const { totalRevenue = null, paidAmount = 0, hasPayments = false } = context;
+
+  // Fully paid: payments cover the revenue, or a cash sale with no payments.
+  const coveredByPayments = totalRevenue !== null && paidAmount >= totalRevenue;
+  const assumedCashPaid = !hasPayments && paymentType === 'Contado';
+  if (coveredByPayments || assumedCashPaid) return 'Pagado';
+
+  if (paymentType === 'Crédito' && scheduledPaymentDate) {
     const startOfTodayUtc = new Date(now);
     startOfTodayUtc.setUTCHours(0, 0, 0, 0);
-    return scheduledPaymentDate.getTime() < startOfTodayUtc.getTime() ? 'Vencido' : 'Pendiente';
+    if (scheduledPaymentDate.getTime() < startOfTodayUtc.getTime()) return 'Vencido';
   }
-  return null;
+
+  return paidAmount > 0 ? 'Abonado' : 'Pendiente';
 }

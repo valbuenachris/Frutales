@@ -1,23 +1,36 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth/AuthProvider';
 import { cn } from '../lib/format';
 
-const NAV_ITEMS = [
+interface NavItem {
+  to: string;
+  label: string;
+  end: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/projects', label: 'Proyectos', end: false },
   { to: '/products', label: 'Productos', end: false },
   { to: '/processes', label: 'Procesos', end: false },
   { to: '/clients', label: 'Clientes', end: false },
-] as const;
+];
 
 /** Sidebar content shared by the desktop rail and the mobile drawer. */
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { user, logout } = useAuth();
+  const items =
+    user?.role === 'admin'
+      ? [...NAV_ITEMS, { to: '/users', label: 'Usuarios', end: false }]
+      : NAV_ITEMS;
+
   return (
     <div className="flex h-full flex-col p-4">
       <p className="px-3 pb-5 pt-2 text-xl font-bold tracking-tight text-ink">Frutales</p>
       <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Menú</p>
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -34,6 +47,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </nav>
+
+      <div className="mt-auto border-t border-stone-100 pt-4">
+        <p className="truncate px-3 text-sm font-semibold text-ink">{user?.name}</p>
+        <p className="truncate px-3 text-xs text-slate-500">{user?.email}</p>
+        <p className="px-3 pt-1 text-xs font-medium text-slate-400">
+          {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
+        </p>
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="mt-2 flex min-h-11 w-full items-center rounded-xl px-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   );
 }

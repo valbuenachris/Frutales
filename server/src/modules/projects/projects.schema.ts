@@ -24,10 +24,25 @@ const isDateOnly = (value: string): boolean => {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 };
 
-const dateOnlySchema = z
+export const dateOnlySchema = z
   .string({ error: 'La fecha no es válida' })
   .trim()
   .refine(isDateOnly, 'La fecha no es válida (usa el formato AAAA-MM-DD)');
+
+/** Sale currencies: Colombian pesos or US dollars. */
+export const SALE_CURRENCIES = ['COP', 'USD'] as const;
+export type SaleCurrency = (typeof SALE_CURRENCIES)[number];
+
+/** Base64 data URL of a receipt image. Empty string means "no image" (clear). */
+const IMAGE_DATA_URL_RE = /^data:image\/(jpeg|jpg|png|webp);base64,/;
+export const imageDataUrlSchema = z
+  .string({ error: 'La imagen no es válida' })
+  .trim()
+  .max(2_000_000, 'La imagen es demasiado grande (máximo 2 MB)')
+  .refine(
+    (value) => value === '' || IMAGE_DATA_URL_RE.test(value),
+    'La imagen debe ser un archivo JPEG, PNG o WebP',
+  );
 
 export const projectInputSchema = z
   .object({
@@ -56,9 +71,9 @@ export const projectInputSchema = z
       .min(0, 'El precio de compra no puede ser negativo')
       .max(100_000_000, 'El precio de compra es demasiado alto'),
     reductionPct: z.coerce
-      .number({ error: 'El porcentaje de reducción debe ser un número' })
-      .min(0, 'El porcentaje de reducción no puede ser negativo')
-      .max(100, 'El porcentaje de reducción no puede superar el 100%'),
+      .number({ error: 'El porcentaje de merma debe ser un número' })
+      .min(0, 'El porcentaje de merma no puede ser negativo')
+      .max(100, 'El porcentaje de merma no puede superar el 100%'),
     netYield: z.coerce
       .number({ error: 'El rendimiento neto debe ser un número' })
       .min(0, 'El rendimiento neto no puede ser negativo')
@@ -68,6 +83,16 @@ export const projectInputSchema = z
       .boolean({ error: 'El ajuste manual debe ser verdadero o falso' })
       .optional()
       .default(false),
+    // Compra: moneda (COP por defecto), TRM si es en dólares y comprobante.
+    purchaseCurrency: z
+      .enum(SALE_CURRENCIES, { error: 'La moneda de compra debe ser "COP" (pesos) o "USD" (dólares)' })
+      .optional(),
+    purchaseExchangeRate: z.coerce
+      .number({ error: 'El precio del dólar debe ser un número' })
+      .positive('El precio del dólar debe ser mayor que 0')
+      .max(100_000, 'El precio del dólar es demasiado alto')
+      .optional(),
+    purchaseImage: imageDataUrlSchema.optional(),
 
     // ------------------------- Fase 2: venta (opcional) -----------------------
     sellingPrice: z.coerce
@@ -90,6 +115,18 @@ export const projectInputSchema = z
       .enum(PAYMENT_TYPES, { error: 'El tipo de pago debe ser "Contado" o "Crédito"' })
       .optional(),
     scheduledPaymentDate: dateOnlySchema.optional(),
+    currency: z.enum(SALE_CURRENCIES, { error: 'La moneda debe ser "COP" (pesos) o "USD" (dólares)' }).optional(),
+    /**
+     * COP per USD for the sale. Optional: when a USD sale arrives without it,
+     * the service fetches the current TRM as a fallback; when provided it is
+     * stored as the historical record of that sale.
+     */
+    exchangeRate: z.coerce
+      .number({ error: 'El precio del dólar debe ser un número' })
+      .positive('El precio del dólar debe ser mayor que 0')
+      .max(100_000, 'El precio del dólar es demasiado alto')
+      .optional(),
+    saleImage: imageDataUrlSchema.optional(),
   })
   .superRefine((data, ctx) => {
     // A sale is registered when any Phase 2 field is present; then the
@@ -100,7 +137,10 @@ export const projectInputSchema = z
       data.buyerContact !== undefined ||
       data.transactionDate !== undefined ||
       data.paymentType !== undefined ||
-      data.scheduledPaymentDate !== undefined;
+      data.scheduledPaymentDate !== undefined ||
+      data.currency !== undefined ||
+      data.exchangeRate !== undefined ||
+      data.saleImage !== undefined;
 
     if (!hasSale) return;
 

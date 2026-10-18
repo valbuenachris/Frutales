@@ -13,6 +13,11 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  if (error instanceof Error && (error as { type?: string }).type === 'entity.too.large') {
+    res.status(413).json({ error: { message: 'El archivo es demasiado grande (máximo 4 MB)' } });
+    return;
+  }
+
   if (error instanceof ZodError) {
     res.status(400).json({
       error: {
@@ -33,8 +38,12 @@ export function errorHandler(
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === 'P2002') {
-      // Unique constraint (duplicate catalog name).
-      res.status(409).json({ error: { message: 'Ya existe un registro con ese nombre' } });
+      // Unique constraint: duplicate catalog name or user email.
+      const target = Array.isArray(error.meta?.target) ? error.meta.target : [];
+      const message = target.includes('email')
+        ? 'Ya existe un usuario con ese correo electrónico'
+        : 'Ya existe un registro con ese nombre';
+      res.status(409).json({ error: { message } });
       return;
     }
     if (error.code === 'P2025') {

@@ -1,12 +1,13 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { cn } from '../../lib/format';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'danger' | 'destructive' | 'ghost';
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary: 'bg-brand text-white shadow-sm hover:bg-brand-dark active:bg-brand-dark',
   secondary: 'border border-stone-200 bg-white text-ink hover:bg-stone-50',
   danger: 'border border-rose-200 bg-white text-rose-600 hover:bg-rose-50',
+  destructive: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-700',
   ghost: 'text-slate-500 hover:bg-stone-100',
 };
 

@@ -1,19 +1,25 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ExpensesSection } from '../components/ExpensesSection';
 import { ErrorState, LoadingState } from '../components/Feedback';
+import { ImageViewer } from '../components/ImageViewer';
 import { PageHeader } from '../components/Layout';
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge';
+import { PaymentsSection } from '../components/PaymentsSection';
 import { SummaryCard } from '../components/SummaryCard';
 import { Button } from '../components/ui/Button';
 import { useDeleteProject, useProject } from '../hooks/useProjects';
-import { formatDate, formatMoney, formatPct, formatQty } from '../lib/format';
+import { formatDate, formatMoney, formatMoneyUsd, formatPct, formatQty } from '../lib/format';
 
-/** Details screen: full breakdown of one project (Fase 1 + Fase 2). */
+/** Details screen: Fase 1 (compra, gastos y proceso) + Fase 2 (venta). */
 export function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const { data: project, isPending, isError, error, refetch } = useProject(id);
   const deleteMutation = useDeleteProject();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (isPending) {
     return (
@@ -46,7 +52,11 @@ export function ProjectDetailsPage() {
   const hasSale = project.sellingPrice !== null && project.paymentType !== null;
 
   const handleDelete = () => {
-    if (!window.confirm(`¿Eliminar "${project.name}"? Esta acción no se puede deshacer.`)) return;
+    deleteMutation.reset();
+    setConfirmingDelete(true);
+  };
+
+  const confirmDelete = () => {
     deleteMutation.mutate(project.id, { onSuccess: () => navigate('/') });
   };
 
@@ -55,9 +65,13 @@ export function ProjectDetailsPage() {
       <PageHeader title={project.name} backTo="/" />
 
       <div className="space-y-5">
-        {/* Fase 1: inputs breakdown */}
+        {/* ============ Fase 1: compra, gastos y procesamiento ============ */}
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
-          <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Fase 1 · Compra y procesamiento
+          </h2>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-slate-600">
               {project.productName}
             </span>
@@ -73,18 +87,39 @@ export function ProjectDetailsPage() {
 
           <dl className="mt-5 space-y-3">
             <InfoRow label="Cantidad inicial" value={formatQty(project.initialQty)} />
-            <InfoRow label="Precio de compra" value={`${formatMoney(project.purchasePrice)} / kg`} />
-            <InfoRow label="Reducción" value={formatPct(project.reductionPct)} />
+            <InfoRow
+              label="Precio de compra"
+              value={
+                project.purchaseCurrency === 'USD'
+                  ? `${formatMoneyUsd(project.purchasePrice)} / kg · TRM ${formatMoney(project.purchaseExchangeRate ?? 0)}`
+                  : `${formatMoney(project.purchasePrice)} / kg`
+              }
+            />
+            <InfoRow label="Caída/Merma" value={formatPct(project.reductionPct)} />
             <InfoRow label="Rendimiento neto" value={formatQty(project.netYield)} />
           </dl>
+
+          {project.purchaseImage ? (
+            <div className="mt-5">
+              <ReceiptThumb label="Comprobante de compra" image={project.purchaseImage} />
+            </div>
+          ) : null}
         </section>
 
-        {/* Fase 2: sale information (or the CTA to complete it) */}
+        {/* Gastos de la Fase 1 (se suman al costo total del producto) */}
+        <ExpensesSection
+          projectId={project.id}
+          expenses={project.expenses}
+          expensesTotal={project.expensesTotal}
+        />
+
+        {/* ================== Fase 2: venta + abonos ================== */}
         {hasSale ? (
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
+          <>
+            <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Venta
+                Fase 2 · Venta
               </h2>
               <PaymentStatusBadge status={project.paymentStatus} />
             </div>
@@ -97,9 +132,23 @@ export function ProjectDetailsPage() {
                 value={project.transactionDate ? formatDate(project.transactionDate) : '—'}
               />
               <InfoRow
-                label="Precio de venta"
-                value={`${formatMoney(project.sellingPrice ?? 0)} / kg`}
+                label={project.currency === 'USD' ? 'Precio de venta (US$)' : 'Precio de venta'}
+                value={
+                  project.currency === 'USD'
+                    ? `${formatMoneyUsd(project.sellingPrice ?? 0)} / kg`
+                    : `${formatMoney(project.sellingPrice ?? 0)} / kg`
+                }
               />
+              <InfoRow
+                label="Moneda"
+                value={project.currency === 'USD' ? 'Dólares (USD)' : 'Pesos (COP)'}
+              />
+              {project.currency === 'USD' ? (
+                <InfoRow
+                  label="Precio del dólar (TRM)"
+                  value={`${formatMoney(project.exchangeRate ?? 0)} / US$`}
+                />
+              ) : null}
               <InfoRow label="Tipo de pago" value={project.paymentType ?? '—'} />
               {project.scheduledPaymentDate ? (
                 <InfoRow
@@ -108,11 +157,27 @@ export function ProjectDetailsPage() {
                 />
               ) : null}
             </dl>
-          </section>
+
+            {project.saleImage ? (
+              <div className="mt-5">
+                <ReceiptThumb label="Comprobante de venta" image={project.saleImage} />
+              </div>
+            ) : null}
+            </section>
+
+            {/* Abonos y pagos parciales de la venta */}
+            <PaymentsSection
+              projectId={project.id}
+              payments={project.payments}
+              paidAmount={project.paidAmount}
+              balance={project.balance}
+              saleCurrency={project.currency ?? 'COP'}
+            />
+          </>
         ) : (
           <section className="rounded-2xl bg-amber-50 p-5 ring-1 ring-amber-100">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-700">
-              Fase 2: venta pendiente
+              Fase 2 · Venta pendiente
             </h2>
             <p className="mt-2 text-sm text-amber-800">
               Registra el comprador, el precio de venta y la forma de pago para calcular el
@@ -127,18 +192,32 @@ export function ProjectDetailsPage() {
         {/* Financial summary */}
         <SummaryCard
           totals={{
-            totalCost: project.totalCost,
+            // "Total inversión" = solo la compra (precio de compra × cantidad comprada).
+            // "Venta total" = lo recibido de la venta.
+            totalCost: project.purchaseCost,
             totalRevenue: project.totalRevenue,
             netProfit: project.netProfit,
           }}
           rows={[
+            ...(project.expensesTotal > 0
+              ? [{ label: 'Gastos', value: formatMoney(project.expensesTotal) }]
+              : []),
             {
-              label: 'Costo por kg vendido',
+              label: 'Costo por kg de producto',
+              // (Costo de compra + gastos) ÷ cantidad de producto terminado.
               value:
-                project.netYield > 0
-                  ? `${formatMoney(project.totalCost / project.netYield)} / kg`
+                project.netYield > 0 && project.purchaseCost + project.expensesTotal > 0
+                  ? `${formatMoney((project.purchaseCost + project.expensesTotal) / project.netYield)} / kg`
                   : '—',
             },
+            ...(project.netProfit !== null && project.netYield > 0
+              ? [
+                  {
+                    label: 'Ganancia neta por kg',
+                    value: `${formatMoney(project.netProfit / project.netYield)} / kg`,
+                  },
+                ]
+              : []),
             ...(marginPct !== null
               ? [{ label: 'Margen de ganancia', value: formatPct(marginPct) }]
               : []),
@@ -147,10 +226,12 @@ export function ProjectDetailsPage() {
 
         {/* Formula reminder */}
         <p className="px-1 text-xs leading-relaxed text-slate-400">
-          Costo = cantidad inicial × precio de compra · Rendimiento = cantidad inicial × (1 −
-          reducción%)
+          Total inversión = cantidad inicial × precio de compra · Costo por kg = (total inversión +
+          gastos) ÷ rendimiento neto · Ganancia neta por kg = ganancia neta ÷ rendimiento neto
           {project.totalRevenue !== null
-            ? ' · Ingreso = rendimiento neto × precio de venta · Ganancia = ingreso − costo.'
+            ? project.currency === 'USD'
+              ? ' · Ingreso = rendimiento × precio en US$ × TRM (COP/USD) · Ganancia = ingreso − costo − gastos.'
+              : ' · Ingreso = rendimiento neto × precio de venta · Ganancia = ingreso − costo − gastos.'
             : '. El ingreso y la ganancia se calculan al registrar la venta (Fase 2).'}
         </p>
 
@@ -172,11 +253,45 @@ export function ProjectDetailsPage() {
           >
             {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar proyecto'}
           </Button>
-          {deleteMutation.error ? (
-            <p className="text-center text-sm text-rose-600">{deleteMutation.error.message}</p>
-          ) : null}
         </div>
       </div>
+
+      {/* Delete confirmation (removes the project with all of its data) */}
+      {confirmingDelete ? (
+        <ConfirmDialog
+          title="Eliminar proyecto"
+          message={`¿Estás seguro de eliminar "${project.name}" con todos sus datos (venta, gastos y comprobantes)? Esta acción no se puede deshacer.`}
+          isBusy={deleteMutation.isPending}
+          errorMessage={deleteMutation.error?.message ?? null}
+          onConfirm={confirmDelete}
+          onClose={() => setConfirmingDelete(false)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** Small tappable thumbnail of a receipt (comprobante) that opens in-app. */
+function ReceiptThumb({ label, image }: { label: string; image: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-3 rounded-xl bg-stone-50 p-2 text-left ring-1 ring-stone-100"
+      >
+        <img src={image} alt={label} className="h-12 w-12 rounded-lg object-cover" />
+        <span className="text-xs font-medium text-slate-600">{label}</span>
+      </button>
+      {open ? (
+        <ImageViewer
+          image={image}
+          title={label}
+          downloadName={`${label.toLowerCase().replaceAll(' ', '-')}.jpg`}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

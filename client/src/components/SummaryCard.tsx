@@ -29,12 +29,12 @@ export function SummaryCard({ totals, rows = [] }: SummaryCardProps) {
 
       <dl className="mt-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-slate-600">Costo total</dt>
+          <dt className="text-slate-600">Total inversión</dt>
           <dd className="font-medium tabular-nums text-ink">{formatMoney(totals.totalCost)}</dd>
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-slate-600">Ingreso total</dt>
+          <dt className="text-slate-600">Venta total</dt>
           <dd className="font-medium tabular-nums text-ink">
             {totals.totalRevenue !== null ? (
               formatMoney(totals.totalRevenue)

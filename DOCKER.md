@@ -14,7 +14,7 @@ Navegador ──▶ Nginx Proxy Manager ──▶ client (nginx :80) ──▶ p
 | Servicio  | Imagen                      | Publicado en            | Notas                                     |
 | --------- | --------------------------- | ----------------------- | ----------------------------------------- |
 | `db`      | `postgres:16-alpine`        | solo interno            | Datos en el volumen `postgres_data`       |
-| `migrate` | imagen build del servidor   | solo interno            | Ejecución única: `prisma migrate deploy`  |
+| `migrate` | imagen build del servidor   | solo interno            | Ejecución única: migraciones + admin inicial |
 | `server`  | imagen de producción        | solo interno            | Usuario no-root, healthcheck en `/health` |
 | `client`  | `nginx:alpine` + build Vite | `npm_net` como `frutales-client` | SPA + proxy inverso de `/api`    |
 
@@ -36,7 +36,8 @@ cd frutales
 cp .env.example .env
 chmod 600 .env
 openssl rand -base64 32   # copia el resultado en POSTGRES_PASSWORD
-nano .env                 # POSTGRES_PASSWORD y el DATABASE_URL correspondiente
+openssl rand -base64 48   # copia el resultado en JWT_SECRET
+nano .env                 # contraseñas, JWT_SECRET, admin y DATABASE_URL
 ```
 
 `.env` está en `.gitignore` — nunca lo subas al repositorio. En servidores
@@ -52,6 +53,15 @@ Variables de `.env`:
 | `DATABASE_URL`      | Cadena de conexión de la API; el host debe ser `db` (servicio de compose). Mantén usuario/contraseña/base sincronizados con `POSTGRES_*` — no se expanden automáticamente |
 | `NODE_ENV`          | `production` para el contenedor de la API                                 |
 | `CLIENT_ORIGIN`     | Origen CORS (el navegador usa `/api` del mismo origen, casi nunca aplica) |
+| `JWT_SECRET`        | Secreto para firmar las sesiones (mínimo 32 caracteres, **obligatorio**). Genéralo con `openssl rand -base64 48` |
+| `JWT_EXPIRES_IN`    | Duración de la sesión (por defecto `7d`)                                  |
+| `ADMIN_NAME`        | Nombre del administrador inicial (opcional)                               |
+| `ADMIN_EMAIL`       | Correo del administrador inicial (opcional)                               |
+| `ADMIN_PASSWORD`    | Contraseña del administrador inicial, mínimo 8 caracteres (opcional)      |
+
+> El administrador inicial solo se crea si `ADMIN_EMAIL` y `ADMIN_PASSWORD`
+> están definidos y el correo aún no existe. Cámbialo desde la pantalla
+> **Usuarios** después del primer ingreso.
 
 ## 2. Despliegue en producción
 
@@ -63,7 +73,7 @@ Ese único comando:
 
 1. construye las imágenes de la API y del cliente,
 2. inicia PostgreSQL y espera a que esté saludable,
-3. ejecuta el contenedor de inicialización `migrate` (`prisma migrate deploy`) y espera a que termine con éxito,
+3. ejecuta el contenedor de inicialización `migrate` (`prisma migrate deploy` + `npm run db:seed`) y espera a que termine con éxito,
 4. inicia la API y espera a que pase su healthcheck de `/health`,
 5. inicia nginx y lo conecta a `npm_net` como **`frutales-client`** — quien lo
    expone a internet es Nginx Proxy Manager (no un puerto del host).
@@ -97,6 +107,10 @@ En la interfaz de NPM: **Hosts → Proxy Hosts → Add Proxy Host**
 
 `client` también resuelve en `npm_net`, pero el alias `frutales-client` evita
 colisiones si otros proyectos también tienen un servicio llamado `client`.
+
+> **Comprobantes (fotos):** las imágenes viajan como base64; para que NPM no las
+> rechace, agrega en la pestaña **Advanced** del Proxy Host:
+> `client_max_body_size 6m;` (el nginx del cliente ya lo permite).
 
 Parar / actualizar:
 
@@ -134,6 +148,13 @@ contenedor `migrate`):
 
 ```bash
 docker compose run --rm migrate npm run prisma:deploy
+```
+
+Crear/actualizar el administrador inicial sin reiniciar la pila (es idempotente;
+usa las variables `ADMIN_*` del `.env`):
+
+```bash
+docker compose run --rm migrate npm run db:seed
 ```
 
 Crea una migración nueva después de editar `server/prisma/schema.prisma` (modo desarrollo):
@@ -193,7 +214,13 @@ docker compose up -d
   runtime.
 - **Migraciones como contenedor de inicialización.** `server` espera a que
   `migrate` termine (`service_completed_successfully`), así que las migraciones
-  se ejecutan exactamente una vez por despliegue, antes de que arranque la API.
+  y el seed del administrador se ejecutan exactamente una vez por despliegue,
+  antes de que arranque la API.
+- **Sin `JWT_SECRET` la API no arranca.** Es intencional: todas las sesiones se
+  firman con ese secreto. En producción usa uno distinto al de desarrollo.
+- **Olvidaste la contraseña del único admin.** Define temporalmente otro
+  `ADMIN_EMAIL` en `.env`, ejecuta `docker compose run --rm migrate npm run db:seed`
+  y usa esa cuenta para restablecer la anterior desde **Usuarios**.
 - **`migrate` termina con (0)** y aparece como `exited (0)` en
   `docker compose ps` — es lo esperado.
 - **Error 502 en Nginx Proxy Manager** significa que NPM no puede alcanzar el

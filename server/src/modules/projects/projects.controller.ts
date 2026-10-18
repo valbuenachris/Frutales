@@ -11,21 +11,21 @@ import * as projectsService from './projects.service.js';
 /** GET /api/projects */
 export async function list(_req: Request, res: Response): Promise<void> {
   const projects = await projectsService.listProjects();
-  res.json({ data: projects.map(toProjectDto) });
+  res.json({ data: projects.map((project) => toProjectDto(project)) });
 }
 
-/** GET /api/projects/:id */
+/** GET /api/projects/:id (includes receipt images) */
 export async function getById(req: Request, res: Response): Promise<void> {
   const { id } = projectIdParamSchema.parse(req.params);
   const project = await projectsService.getProject(id);
-  res.json({ data: toProjectDto(project) });
+  res.json({ data: toProjectDto(project, { includeImages: true }) });
 }
 
 /** POST /api/projects */
 export async function create(req: Request, res: Response): Promise<void> {
   const input = projectInputSchema.parse(req.body);
   const project = await projectsService.createProject(input);
-  res.status(201).json({ data: toProjectDto(project) });
+  res.status(201).json({ data: toProjectDto(project, { includeImages: true }) });
 }
 
 /** PUT /api/projects/:id */
@@ -33,7 +33,7 @@ export async function update(req: Request, res: Response): Promise<void> {
   const { id } = projectIdParamSchema.parse(req.params);
   const input = projectInputSchema.parse(req.body);
   const project = await projectsService.updateProject(id, input);
-  res.json({ data: toProjectDto(project) });
+  res.json({ data: toProjectDto(project, { includeImages: true }) });
 }
 
 /** DELETE /api/projects/:id */

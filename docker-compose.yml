@@ -39,9 +39,13 @@ services:
     build:
       context: ./server
       target: build
-    command: ["npm", "run", "prisma:deploy"]
+    # Applies migrations and then creates the initial admin (idempotent).
+    command: ["sh", "-c", "npm run prisma:deploy && npm run db:seed"]
     environment:
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
@@ -60,6 +64,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
       PORT: 4000
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
     depends_on:
       db:
         condition: service_healthy
