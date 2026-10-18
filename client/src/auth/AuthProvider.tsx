@@ -59,10 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout();
     } finally {
-      queryClient.clear();
+      // OJO: no usar queryClient.clear() aquí — elimina también la query de
+      // auth y el observer montado de useQuery queda desconectado, dejando el
+      // usuario viejo visible. resetCache() limpia todo EXCEPTO auth y el
+      // setQueryData(null) actualiza el observer vivo (dispara el redirect).
+      resetCache();
       queryClient.setQueryData(AUTH_QUERY_KEY, null);
     }
-  }, [queryClient]);
+  }, [queryClient, resetCache]);
 
   const user = meQuery.data ?? null;
 
