@@ -285,7 +285,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
   if (netYield > 0 && (totals.totalCost + registeredExpenses) > 0) {
     // (Costo de compra + gastos) ÷ kg de producto terminado.
     summaryRows.push({
-      label: 'Costo por kg de producto',
+      label: 'Costo por kg',
       value: `${formatMoney((totals.totalCost + registeredExpenses) / netYield)} / kg`,
     });
   }
@@ -307,7 +307,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
   if (saleActive && values.currency === 'USD') {
     summaryRows.push(
       {
-        label: 'Ingreso en dólares',
+        label: 'Venta en dólares',
         value: formatMoneyUsd(netYield * parseNumber(values.sellingPrice)),
       },
       { label: 'Precio del dólar', value: formatMoney(usdRate) },

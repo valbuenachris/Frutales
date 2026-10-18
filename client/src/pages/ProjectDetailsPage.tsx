@@ -203,7 +203,7 @@ export function ProjectDetailsPage() {
               ? [{ label: 'Gastos', value: formatMoney(project.expensesTotal) }]
               : []),
             {
-              label: 'Costo por kg de producto',
+              label: 'Costo por kg',
               // (Costo de compra + gastos) ÷ cantidad de producto terminado.
               value:
                 project.netYield > 0 && project.purchaseCost + project.expensesTotal > 0
