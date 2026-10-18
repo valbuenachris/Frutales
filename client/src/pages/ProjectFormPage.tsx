@@ -15,6 +15,11 @@ import { useExchangeRate } from '../hooks/useExchangeRate';
 import { productHooks, processHooks } from '../hooks/useCatalog';
 import { computeNetYield, computeTotals, parseNumber } from '../lib/calc';
 import { cn, formatMoney, formatMoneyUsd, formatQty, toDateInputValue, todayInputValue } from '../lib/format';
+import {
+  sanitizeProjectPayload,
+  type CompraNormalizada,
+  type VentaCompleta,
+} from '../lib/sanitize-payload';
 import type { PaymentType, Project, ProjectPayload, SaleCurrency } from '../types/project';
 
 type FormPhase = 1 | 2;
@@ -319,41 +324,45 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
     }
     setFormError(null);
 
-    const payload: ProjectPayload = {
+    const compra: CompraNormalizada = {
       // Fase 1
-      name: values.name.trim(),
-      productName: values.productName.trim(),
+      name: values.name,
+      productName: values.productName,
       processType: values.processType,
       initialQty,
       purchasePrice,
       purchaseCurrency: values.purchaseCurrency,
-      ...(values.purchaseCurrency === 'USD'
-        ? { purchaseExchangeRate: parseNumber(values.purchaseExchangeRate) }
-        : {}),
-      ...(values.purchaseImage ? { purchaseImage: values.purchaseImage } : {}),
+      purchaseExchangeRate: parseNumber(values.purchaseExchangeRate),
+      purchaseImage: values.purchaseImage,
       reductionPct,
       netYieldOverridden: values.netYieldOverridden,
-      // Only send netYield when the user explicitly overrode it.
-      ...(values.netYieldOverridden ? { netYield } : {}),
-      // Fase 2: omit ALL sale fields when the sale is not active (clears it).
-      ...(saleActive
-        ? {
-            sellingPrice: parseNumber(values.sellingPrice),
-            currency: values.currency,
-            ...(values.currency === 'USD'
-              ? { exchangeRate: parseNumber(values.exchangeRate) }
-              : {}),
-            ...(values.saleImage ? { saleImage: values.saleImage } : {}),
-            buyerName: values.buyerName.trim(),
-            ...(values.buyerContact.trim() ? { buyerContact: values.buyerContact.trim() } : {}),
-            transactionDate: values.transactionDate,
-            paymentType: values.paymentType,
-            ...(values.paymentType === 'Crédito'
-              ? { scheduledPaymentDate: values.scheduledPaymentDate }
-              : {}),
-          }
-        : {}),
+      netYield,
     };
+
+    // Contrato Fase 2: venta completa (`VentaCompleta`) o `null` para limpiarla.
+    const venta: VentaCompleta | null = saleActive
+      ? {
+          sellingPrice: parseNumber(values.sellingPrice),
+          currency: values.currency,
+          exchangeRate: parseNumber(values.exchangeRate),
+          buyerName: values.buyerName,
+          buyerContact: values.buyerContact,
+          transactionDate: values.transactionDate,
+          paymentType: values.paymentType,
+          scheduledPaymentDate: values.scheduledPaymentDate,
+          saleImage: values.saleImage,
+        }
+      : null;
+
+    let payload: ProjectPayload;
+    try {
+      payload = sanitizeProjectPayload({ compra, venta });
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : 'No se pudo preparar el envío. Revisa los datos.',
+      );
+      return;
+    }
 
     const onSuccess = (saved: Project) => navigate(`/projects/${saved.id}`);
 
