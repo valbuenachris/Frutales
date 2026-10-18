@@ -34,7 +34,7 @@ export function SummaryCard({ totals, rows = [] }: SummaryCardProps) {
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <dt className="text-slate-600">Venta total</dt>
+          <dt className="text-slate-600">Venta total en pesos</dt>
           <dd className="font-medium tabular-nums text-ink">
             {totals.totalRevenue !== null ? (
               formatMoney(totals.totalRevenue)

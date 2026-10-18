@@ -193,7 +193,7 @@ export function ProjectDetailsPage() {
         <SummaryCard
           totals={{
             // "Total inversión" = solo la compra (precio de compra × cantidad comprada).
-            // "Venta total" = lo recibido de la venta.
+            // "Venta total en pesos" = lo recibido de la venta (normalizado a COP).
             totalCost: project.purchaseCost,
             totalRevenue: project.totalRevenue,
             netProfit: project.netProfit,
