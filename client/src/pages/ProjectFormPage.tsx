@@ -468,8 +468,8 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                 htmlFor="processType"
                 hint={
                   processNames.length === 0
-                    ? 'Aún no hay procesos en el catálogo. Agrégalos en la sección Procesos.'
-                    : 'Se administran en la sección Procesos.'
+                    ? 'Aún no hay procesos registrados.'
+                    : 'Solo se listan los procesos registrados.'
                 }
               >
                 <Select

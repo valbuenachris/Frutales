@@ -7,7 +7,6 @@ import { ClientsPage } from './pages/ClientsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { ProcessesPage } from './pages/ProcessesPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProjectDetailsPage } from './pages/ProjectDetailsPage';
 import { ProjectFormPage } from './pages/ProjectFormPage';
@@ -44,7 +43,6 @@ export default function App() {
                 <Route path="/projects/:id" element={<ProjectDetailsPage />} />
                 <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
                 <Route path="/products" element={<ProductsPage />} />
-                <Route path="/processes" element={<ProcessesPage />} />
                 <Route path="/clients" element={<ClientsPage />} />
                 <Route element={<RequireAdmin />}>
                   <Route path="/users" element={<UsersPage />} />

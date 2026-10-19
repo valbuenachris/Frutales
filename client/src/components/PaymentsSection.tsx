@@ -351,6 +351,8 @@ function PaymentModal({ title, initial, isSaving, errorMessage, onSubmit, onClos
     }
     if (values.currency === 'USD' && parseNumber(values.exchangeRate) <= 0) {
       setFormError('El precio del dólar es obligatorio para pagos en dólares.');
+      // Lleva al usuario directo al campo de la TRM.
+      document.getElementById('paymentAmount-rate')?.focus();
       return;
     }
     setFormError(null);

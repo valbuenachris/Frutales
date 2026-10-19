@@ -47,7 +47,8 @@ export async function getUsdCopRate(): Promise<ExchangeRateInfo> {
   for (const url of providers) {
     try {
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(8000),
+        // 4s por proveedor: si fallan, el usuario ve rápido la opción manual.
+        signal: AbortSignal.timeout(4000),
         headers: { accept: 'application/json' },
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

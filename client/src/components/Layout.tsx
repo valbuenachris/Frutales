@@ -13,7 +13,6 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/projects', label: 'Proyectos', end: false },
   { to: '/products', label: 'Productos', end: false },
-  { to: '/processes', label: 'Procesos', end: false },
   { to: '/clients', label: 'Clientes', end: false },
 ];
 
