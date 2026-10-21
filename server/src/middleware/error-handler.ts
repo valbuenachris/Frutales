@@ -46,6 +46,10 @@ export function errorHandler(
       res.status(409).json({ error: { message } });
       return;
     }
+    if (error.code === 'P2003') {
+      res.status(409).json({ error: { message: 'Violación de clave foránea: el registro está siendo utilizado por otros datos' } });
+      return;
+    }
     if (error.code === 'P2025') {
       res.status(404).json({ error: { message: 'Recurso no encontrado' } });
       return;
