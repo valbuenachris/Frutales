@@ -24,7 +24,11 @@ export async function requireAuth(
   }
 }
 
-/** Exige un rol concreto (siempre después de `requireAuth`). */
+/**
+ * Exige un rol concreto (siempre después de `requireAuth`).
+ * Requiere que el usuario tenga un rol específico. Debe ejecutarse después de `requireAuth`.
+ * Responde con 401 si no hay usuario autenticado y con 403 si el rol no coincide.
+ */
 export function requireRole(role: UserRole) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
