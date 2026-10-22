@@ -29,9 +29,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-base font-semibold text-ink">{project.name}</h3>
-            <p className="mt-0.5 truncate text-sm text-slate-500">
-              {project.productName} · {project.processType}
-            </p>
+          <p className="mt-0.5 truncate text-sm text-slate-500">{project.productName}</p>
           </div>
           <PaymentStatusBadge status={project.paymentStatus} />
         </div>

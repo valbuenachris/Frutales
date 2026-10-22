@@ -9,13 +9,6 @@ export interface Product {
   updatedAt: string;
 }
 
-export interface Process {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Client {
   id: string;
   name: string;

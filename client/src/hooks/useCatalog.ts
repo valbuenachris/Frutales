@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { catalogsApi, type CatalogApi } from '../api/catalog';
-import type { Client, Process, Product } from '../types/catalog';
+import type { Client, Product } from '../types/catalog';
 
 /**
  * Factory that builds the four TanStack Query hooks for a catalog resource,
@@ -40,5 +40,4 @@ export function createCatalogHooks<TItem extends { id: string }>(key: string, ap
 }
 
 export const productHooks = createCatalogHooks<Product>('products', catalogsApi.products);
-export const processHooks = createCatalogHooks<Process>('processes', catalogsApi.processes);
 export const clientHooks = createCatalogHooks<Client>('clients', catalogsApi.clients);

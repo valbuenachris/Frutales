@@ -54,7 +54,6 @@ export interface ProjectDto {
   id: string;
   name: string;
   productName: string;
-  processType: string;
   initialQty: number;
   purchasePrice: number;
   /** "COP" | "USD" (legacy rows default to "COP"). */
@@ -219,7 +218,6 @@ export function toProjectDto(
     id: project.id,
     name: project.name,
     productName: project.productName,
-    processType: project.processType,
     initialQty,
     purchasePrice,
     purchaseCurrency,

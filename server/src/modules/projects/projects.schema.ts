@@ -33,6 +33,15 @@ export const dateOnlySchema = z
 export const SALE_CURRENCIES = ['COP', 'USD'] as const;
 export type SaleCurrency = (typeof SALE_CURRENCIES)[number];
 
+/**
+ * Topes alineados con la capacidad real de las columnas de la base de datos
+ * (se aceptan valores grandes, p. ej. abonos de cientos de millones):
+ *  - Decimal(12,2) para montos -> hasta 9.999.999.999,99
+ *  - Decimal(12,3) para kg    -> hasta 999.999.999,999
+ */
+export const MONEY_MAX = 9_999_999_999.99;
+export const QTY_MAX = 999_999_999.999;
+
 /** Base64 data URL of a receipt image. Empty string means "no image" (clear). */
 const IMAGE_DATA_URL_RE = /^data:image\/(jpeg|jpg|png|webp);base64,/;
 export const imageDataUrlSchema = z
@@ -57,19 +66,14 @@ export const projectInputSchema = z
       .trim()
       .min(1, 'El nombre del producto es obligatorio')
       .max(120, 'El nombre del producto no puede superar los 120 caracteres'),
-    processType: z
-      .string({ error: 'El tipo de proceso es obligatorio' })
-      .trim()
-      .min(1, 'El tipo de proceso es obligatorio')
-      .max(60, 'El tipo de proceso no puede superar los 60 caracteres'),
     initialQty: z.coerce
       .number({ error: 'La cantidad inicial debe ser un número' })
       .positive('La cantidad inicial debe ser mayor que 0')
-      .max(1_000_000, 'La cantidad inicial es demasiado grande'),
+      .max(QTY_MAX, 'La cantidad inicial es demasiado grande'),
     purchasePrice: z.coerce
       .number({ error: 'El precio de compra debe ser un número' })
       .min(0, 'El precio de compra no puede ser negativo')
-      .max(100_000_000, 'El precio de compra es demasiado alto'),
+      .max(MONEY_MAX, 'El precio de compra es demasiado alto'),
     reductionPct: z.coerce
       .number({ error: 'El porcentaje de merma debe ser un número' })
       .min(0, 'El porcentaje de merma no puede ser negativo')
@@ -77,7 +81,7 @@ export const projectInputSchema = z
     netYield: z.coerce
       .number({ error: 'El rendimiento neto debe ser un número' })
       .min(0, 'El rendimiento neto no puede ser negativo')
-      .max(1_000_000, 'El rendimiento neto es demasiado grande')
+      .max(QTY_MAX, 'El rendimiento neto es demasiado grande')
       .optional(),
     netYieldOverridden: z
       .boolean({ error: 'El ajuste manual debe ser verdadero o falso' })
@@ -98,7 +102,7 @@ export const projectInputSchema = z
     sellingPrice: z.coerce
       .number({ error: 'El precio de venta debe ser un número' })
       .min(0, 'El precio de venta no puede ser negativo')
-      .max(100_000_000, 'El precio de venta es demasiado alto')
+      .max(MONEY_MAX, 'El precio de venta es demasiado alto')
       .optional(),
     buyerName: z
       .string({ error: 'El nombre del comprador debe ser texto' })

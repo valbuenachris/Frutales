@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { dateOnlySchema, imageDataUrlSchema, SALE_CURRENCIES } from './projects.schema.js';
+import { dateOnlySchema, imageDataUrlSchema, MONEY_MAX, SALE_CURRENCIES } from './projects.schema.js';
 
 /** DTO for an abono / pago parcial of a sale. Messages are user-facing Spanish. */
 export const paymentInputSchema = z.object({
   amount: z.coerce
     .number({ error: 'El monto del pago debe ser un número' })
     .positive('El monto del pago debe ser mayor que 0')
-    .max(100_000_000, 'El monto del pago es demasiado alto'),
+    .max(MONEY_MAX, 'El monto del pago es demasiado alto'),
   /** "COP" (default) or "USD". */
   currency: z
     .enum(SALE_CURRENCIES, { error: 'La moneda debe ser "COP" (pesos) o "USD" (dólares)' })

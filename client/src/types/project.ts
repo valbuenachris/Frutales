@@ -48,7 +48,6 @@ export interface Project {
   id: string;
   name: string;
   productName: string;
-  processType: string;
   initialQty: number;
   purchasePrice: number;
   /** Moneda del precio de compra; filas antiguas se reportan como "COP". */
@@ -102,7 +101,6 @@ export interface Project {
 export interface ProjectPayload {
   name: string;
   productName: string;
-  processType: string;
   initialQty: number;
   purchasePrice: number;
   /** "COP" (predeterminado) o "USD". */

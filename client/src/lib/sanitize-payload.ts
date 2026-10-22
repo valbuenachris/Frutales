@@ -64,7 +64,6 @@ export type PayloadFase2<V extends VentaCompleta | null> = V extends VentaComple
 export interface CompraNormalizada {
   name: string;
   productName: string;
-  processType: string;
   initialQty: number;
   purchasePrice: number;
   purchaseCurrency: SaleCurrency;
@@ -146,7 +145,6 @@ export function sanitizeProjectPayload(entrada: EntradaSaneado): ProjectPayload 
     // Fase 1
     name: compra.name.trim(),
     productName: compra.productName.trim(),
-    processType: compra.processType,
     initialQty: compra.initialQty,
     purchasePrice: compra.purchasePrice,
     purchaseCurrency: compra.purchaseCurrency,

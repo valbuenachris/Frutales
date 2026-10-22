@@ -75,9 +75,6 @@ export function ProjectDetailsPage() {
             <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-slate-600">
               {project.productName}
             </span>
-            <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
-              {project.processType}
-            </span>
             {project.netYieldOverridden ? (
               <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
                 Rendimiento ajustado manualmente

@@ -12,7 +12,7 @@ import { MoneyField } from '../components/ui/MoneyField';
 import { Select } from '../components/ui/Select';
 import { useCreateProject, useProject, useUpdateProject } from '../hooks/useProjects';
 import { useExchangeRate } from '../hooks/useExchangeRate';
-import { productHooks, processHooks } from '../hooks/useCatalog';
+import { productHooks } from '../hooks/useCatalog';
 import { computeNetYield, computeTotals, parseNumber } from '../lib/calc';
 import { cn, formatMoney, formatMoneyUsd, formatQty, toDateInputValue, todayInputValue } from '../lib/format';
 import {
@@ -28,7 +28,6 @@ interface ProjectFormValues {
   // Fase 1: compra y procesamiento
   name: string;
   productName: string;
-  processType: string;
   initialQty: string;
   purchasePrice: string;
   purchaseCurrency: SaleCurrency;
@@ -52,7 +51,6 @@ interface ProjectFormValues {
 const EMPTY_VALUES: ProjectFormValues = {
   name: '',
   productName: '',
-  processType: '',
   initialQty: '',
   purchasePrice: '',
   purchaseCurrency: 'COP',
@@ -79,7 +77,6 @@ function toFormValues(project?: Project): ProjectFormValues {
   return {
     name: project.name,
     productName: project.productName,
-    processType: project.processType,
     initialQty: String(project.initialQty),
     purchasePrice: String(project.purchasePrice),
     purchaseCurrency: project.purchaseCurrency === 'USD' ? 'USD' : 'COP',
@@ -121,7 +118,6 @@ function validate(values: ProjectFormValues): string | null {
   // Fase 1
   if (!values.name.trim()) return 'El nombre del proyecto es obligatorio.';
   if (!values.productName.trim()) return 'El nombre del producto es obligatorio.';
-  if (!values.processType.trim()) return 'El tipo de proceso es obligatorio.';
   if (parseNumber(values.initialQty) <= 0) return 'La cantidad inicial debe ser mayor que 0.';
   if (parseNumber(values.purchasePrice) < 0) return 'El precio de compra no puede ser negativo.';
   if (values.purchaseCurrency === 'USD' && parseNumber(values.purchaseExchangeRate) <= 0)
@@ -213,22 +209,16 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
   const purchaseRateQuery = useExchangeRate(values.purchaseCurrency === 'USD');
   const exchangeRateQuery = useExchangeRate(values.currency === 'USD');
 
-  // Catálogos maestros: los selectores muestran solo lo registrado en las
-  // secciones de Productos y Procesos.
+  // Catálogo maestro: el selector de producto muestra solo lo registrado en
+  // la sección Productos.
   const productsQuery = productHooks.useList();
-  const processesQuery = processHooks.useList();
   const productNames = (productsQuery.data ?? []).map((product) => product.name);
-  const processNames = (processesQuery.data ?? []).map((process) => process.name);
   // Si el proyecto editado trae un valor que ya no está en el catálogo, se
   // conserva como opción extra para no perder el dato al guardar.
   const productOptions =
     values.productName && !productNames.includes(values.productName)
       ? [values.productName, ...productNames]
       : productNames;
-  const processOptions =
-    values.processType && !processNames.includes(values.processType)
-      ? [values.processType, ...processNames]
-      : processNames;
 
   const patch = (partial: Partial<ProjectFormValues>) =>
     setValues((prev) => ({ ...prev, ...partial }));
@@ -328,7 +318,6 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
       // Fase 1
       name: values.name,
       productName: values.productName,
-      processType: values.processType,
       initialQty,
       purchasePrice,
       purchaseCurrency: values.purchaseCurrency,
@@ -456,31 +445,6 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                     Selecciona un producto…
                   </option>
                   {productOptions.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field
-                label="Tipo de proceso"
-                htmlFor="processType"
-                hint={
-                  processNames.length === 0
-                    ? 'Aún no hay procesos registrados.'
-                    : 'Solo se listan los procesos registrados.'
-                }
-              >
-                <Select
-                  id="processType"
-                  value={values.processType}
-                  onChange={(e) => patch({ processType: e.target.value })}
-                >
-                  <option value="" disabled>
-                    Selecciona un proceso…
-                  </option>
-                  {processOptions.map((name) => (
                     <option key={name} value={name}>
                       {name}
                     </option>

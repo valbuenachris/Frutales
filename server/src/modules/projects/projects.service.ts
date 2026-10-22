@@ -107,7 +107,6 @@ async function buildWriteData(input: ProjectInput): Promise<Prisma.ProjectUnchec
     // Fase 1
     name: input.name,
     productName: input.productName,
-    processType: input.processType,
     initialQty: new Prisma.Decimal(round(input.initialQty, QTY_DECIMALS)),
     purchasePrice: new Prisma.Decimal(round(input.purchasePrice, 2)),
     purchaseCurrency,

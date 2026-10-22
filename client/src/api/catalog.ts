@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import type { Client, Process, Product } from '../types/catalog';
+import type { Client, Product } from '../types/catalog';
 
 /** CRUD API surface shared by every catalog resource. */
 export interface CatalogApi<TItem> {
@@ -20,6 +20,5 @@ const createCatalogApi = <TItem>(path: string): CatalogApi<TItem> => ({
 
 export const catalogsApi = {
   products: createCatalogApi<Product>('/products'),
-  processes: createCatalogApi<Process>('/processes'),
   clients: createCatalogApi<Client>('/clients'),
 };
