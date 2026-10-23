@@ -12,6 +12,7 @@ import { parseNumber } from '../lib/calc';
 import {
   cn,
   formatDate,
+  formatInputNumber,
   formatMoney,
   formatMoneyUsd,
   toDateInputValue,
@@ -303,9 +304,9 @@ export function buildPaymentInitial(
     };
   }
   return {
-    amount: String(payment.amount),
+    amount: formatInputNumber(payment.amount, 2),
     currency: payment.currency,
-    exchangeRate: payment.exchangeRate !== null ? String(payment.exchangeRate) : '',
+    exchangeRate: payment.exchangeRate !== null ? formatInputNumber(payment.exchangeRate, 4) : '',
     note: payment.note ?? '',
     image: payment.image,
     date: payment.date ? toDateInputValue(new Date(payment.date)) : '',

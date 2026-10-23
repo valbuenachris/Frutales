@@ -50,6 +50,13 @@ export const formatMoneyCompact = (value: number): string => {
   return formatMoney(value);
 };
 
+/**
+ * Número sin símbolo de moneda para precargar inputs de texto en formato
+ * es-CO: "3.598.998.323,87" (puntos de miles, coma decimal).
+ */
+export const formatInputNumber = (value: number, maxDecimals = 3): string =>
+  new Intl.NumberFormat(LOCALE, { maximumFractionDigits: maxDecimals }).format(value);
+
 /** Kilograms, up to three decimals, e.g. "8 kg" / "1.500,5 kg". */
 export const formatQty = (value: number): string => `${qtyFormatter.format(value)} kg`;
 

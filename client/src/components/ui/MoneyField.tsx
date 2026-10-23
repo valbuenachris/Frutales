@@ -53,10 +53,9 @@ export function MoneyField({
       <Field label={label} htmlFor={id} hint={hint}>
         <Input
           id={id}
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
-          min="0"
+          autoComplete="off"
           value={amount}
           onChange={(event) => onAmountChange(event.target.value)}
           placeholder={placeholder}
@@ -97,10 +96,9 @@ export function MoneyField({
         >
           <Input
             id={`${id}-rate`}
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0"
+            autoComplete="off"
             value={exchangeRate}
             onChange={(event) => onExchangeRateChange(event.target.value)}
             placeholder="4000"

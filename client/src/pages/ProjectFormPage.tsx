@@ -14,7 +14,7 @@ import { useCreateProject, useProject, useUpdateProject } from '../hooks/useProj
 import { useExchangeRate } from '../hooks/useExchangeRate';
 import { productHooks } from '../hooks/useCatalog';
 import { computeNetYield, computeTotals, parseNumber } from '../lib/calc';
-import { cn, formatMoney, formatMoneyUsd, formatQty, toDateInputValue, todayInputValue } from '../lib/format';
+import { cn, formatInputNumber, formatMoney, formatMoneyUsd, formatQty, toDateInputValue, todayInputValue } from '../lib/format';
 import {
   sanitizeProjectPayload,
   type CompraNormalizada,
@@ -77,23 +77,26 @@ function toFormValues(project?: Project): ProjectFormValues {
   return {
     name: project.name,
     productName: project.productName,
-    initialQty: String(project.initialQty),
-    purchasePrice: String(project.purchasePrice),
+    initialQty: formatInputNumber(project.initialQty, 3),
+    purchasePrice: formatInputNumber(project.purchasePrice, 2),
     purchaseCurrency: project.purchaseCurrency === 'USD' ? 'USD' : 'COP',
     purchaseExchangeRate:
-      project.purchaseExchangeRate !== null ? String(project.purchaseExchangeRate) : '',
+      project.purchaseExchangeRate !== null
+        ? formatInputNumber(project.purchaseExchangeRate, 4)
+        : '',
     purchaseImage: project.purchaseImage,
-    reductionPct: String(project.reductionPct),
+    reductionPct: formatInputNumber(project.reductionPct, 2),
     netYieldOverridden: project.netYieldOverridden,
-    netYield: project.netYieldOverridden ? String(project.netYield) : '',
+    netYield: project.netYieldOverridden ? formatInputNumber(project.netYield, 3) : '',
     buyerName: project.buyerName ?? '',
     buyerContact: project.buyerContact ?? '',
     transactionDate: project.transactionDate
       ? toDateInputValue(new Date(project.transactionDate))
       : todayInputValue(),
-    sellingPrice: project.sellingPrice !== null ? String(project.sellingPrice) : '',
+    sellingPrice: project.sellingPrice !== null ? formatInputNumber(project.sellingPrice, 2) : '',
     currency: project.currency === 'USD' ? 'USD' : 'COP',
-    exchangeRate: project.exchangeRate !== null ? String(project.exchangeRate) : '',
+    exchangeRate:
+      project.exchangeRate !== null ? formatInputNumber(project.exchangeRate, 4) : '',
     saleImage: project.saleImage,
     paymentType: project.paymentType === 'Crédito' ? 'Crédito' : 'Contado',
     scheduledPaymentDate: project.scheduledPaymentDate
@@ -461,10 +464,9 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
               <Field label="Cantidad inicial (kg)" htmlFor="initialQty">
                 <Input
                   id="initialQty"
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.001"
-                  min="0"
+                  autoComplete="off"
                   value={values.initialQty}
                   onChange={(e) => patch({ initialQty: e.target.value })}
                   placeholder="10"
@@ -507,11 +509,9 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
               <Field label="Caída/Merma (%)" htmlFor="reductionPct">
                 <Input
                   id="reductionPct"
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.01"
-                  min="0"
-                  max="100"
+                  autoComplete="off"
                   value={values.reductionPct}
                   onChange={(e) => patch({ reductionPct: e.target.value })}
                   placeholder="20"
@@ -532,7 +532,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                       patch({
                         netYieldOverridden: e.target.checked,
                         // Prefill with the auto value when enabling the override.
-                        netYield: e.target.checked ? String(autoNetYield) : '',
+                        netYield: e.target.checked ? formatInputNumber(autoNetYield, 3) : '',
                       })
                     }
                   />
@@ -552,11 +552,10 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
               >
                 <Input
                   id="netYield"
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  step="0.001"
-                  min="0"
-                  value={values.netYieldOverridden ? values.netYield : String(autoNetYield)}
+                  autoComplete="off"
+                  value={values.netYieldOverridden ? values.netYield : formatInputNumber(autoNetYield, 3)}
                   disabled={!values.netYieldOverridden}
                   onChange={(e) => patch({ netYield: e.target.value })}
                   className={values.netYieldOverridden ? undefined : 'bg-stone-50'}

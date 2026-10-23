@@ -13,10 +13,28 @@ export interface Totals {
 
 const round = (value: number, decimals: number): number => Number(value.toFixed(decimals));
 
-/** Convert an input string to a number, tolerating comma decimals and blanks. */
+/**
+ * Convierte un texto numérico en formato es-CO a número:
+ *  - con coma: la coma es el decimal y los puntos son miles
+ *    ("3.598.998.323,87" -> 3598998323.87)
+ *  - sin coma: un punto con grupos de 3 dígitos es separador de miles
+ *    ("1.234" -> 1234, "1.234.567" -> 1234567); en otro caso es decimal
+ *    ("2.5" -> 2.5, "12.34" -> 12.34)
+ *  - vacío o inválido -> 0
+ */
 export function parseNumber(value: string): number {
-  const normalized = value.replace(',', '.').trim();
-  if (normalized === '') return 0;
+  const trimmed = value.trim();
+  if (trimmed === '') return 0;
+
+  let normalized: string;
+  if (trimmed.includes(',')) {
+    normalized = trimmed.replaceAll('.', '').replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(trimmed)) {
+    normalized = trimmed.replaceAll('.', '');
+  } else {
+    normalized = trimmed;
+  }
+
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }

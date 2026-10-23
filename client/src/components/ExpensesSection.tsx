@@ -11,6 +11,7 @@ import { useExchangeRate } from '../hooks/useExchangeRate';
 import { parseNumber } from '../lib/calc';
 import {
   formatDate,
+  formatInputNumber,
   formatMoney,
   formatMoneyUsd,
   toDateInputValue,
@@ -170,11 +171,11 @@ export function ExpensesSection({ projectId, expenses, expensesTotal }: Expenses
                 modal.mode === 'edit'
                   ? {
                       concept: modal.expense.concept,
-                      amount: String(modal.expense.amount),
+                      amount: formatInputNumber(modal.expense.amount, 2),
                       currency: modal.expense.currency,
                       exchangeRate:
                         modal.expense.exchangeRate !== null
-                          ? String(modal.expense.exchangeRate)
+                          ? formatInputNumber(modal.expense.exchangeRate, 4)
                           : '',
                       image: modal.expense.image,
                       date: modal.expense.date
