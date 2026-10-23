@@ -4,7 +4,7 @@
  * and so the math is easy to unit-test.
  */
 
-/** Decimal places for kg values (matches Decimal(12,3) columns). */
+/** Decimal places for gram values (matches Decimal(12,3) columns). */
 export const QTY_DECIMALS = 3;
 /** Decimal places for money values (matches Decimal(12,2) columns). */
 export const MONEY_DECIMALS = 2;
@@ -13,34 +13,35 @@ export const MONEY_DECIMALS = 2;
 export const round = (value: number, decimals: number): number => Number(value.toFixed(decimals));
 
 /**
- * Net yield = initial quantity * (1 - reduction% / 100).
- * Example: 10 kg with a 20% reduction -> 8 kg.
+ * Net yield = initial quantity * (1 - reduction% / 100), rounded to whole
+ * grams (only the reduction keeps decimals).
+ * Example: 10.000 g with a 20% reduction -> 8.000 g.
  */
 export const computeNetYield = (initialQty: number, reductionPct: number): number =>
-  round(initialQty * (1 - reductionPct / 100), QTY_DECIMALS);
+  round(initialQty * (1 - reductionPct / 100), 0);
 
 /**
- * Total purchase cost in COP = kg purchased * purchase price per kg *
- * exchange rate. Purchases registered in USD are converted with the rate
+ * Total purchase cost in COP = (grams purchased ÷ 1000) * purchase price per
+ * kg * exchange rate. Purchases registered in USD are converted with the rate
  * captured at purchase time (`purchaseExchangeRate`); COP purchases use 1.
  */
 export const computeTotalCost = (
   initialQty: number,
   purchasePrice: number,
   exchangeRate = 1,
-): number => round(initialQty * purchasePrice * exchangeRate, MONEY_DECIMALS);
+): number => round((initialQty / 1000) * purchasePrice * exchangeRate, MONEY_DECIMALS);
 
 /**
- * Total revenue in COP = kg of net yield * selling price per kg * exchange
- * rate. Sales registered in USD are converted with the rate captured at the
- * moment of the sale (`exchangeRate`); COP sales pass the default 1.
- * Example: 8 kg * US$1,50 * 4.000 COP/USD = $48.000.
+ * Total revenue in COP = (grams of net yield ÷ 1000) * selling price per kg *
+ * exchange rate. Sales registered in USD are converted with the rate captured
+ * at the moment of the sale (`exchangeRate`); COP sales pass the default 1.
+ * Example: 8.000 g ÷ 1000 * $6.000/kg = $48.000.
  */
 export const computeTotalRevenue = (
   netYield: number,
   sellingPrice: number,
   exchangeRate = 1,
-): number => round(netYield * sellingPrice * exchangeRate, MONEY_DECIMALS);
+): number => round((netYield / 1000) * sellingPrice * exchangeRate, MONEY_DECIMALS);
 
 /** Net profit = total revenue - total cost (negative means loss). */
 export const computeNetProfit = (totalRevenue: number, totalCost: number): number =>

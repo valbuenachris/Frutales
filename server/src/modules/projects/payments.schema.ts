@@ -5,6 +5,7 @@ import { dateOnlySchema, imageDataUrlSchema, MONEY_MAX, SALE_CURRENCIES } from '
 export const paymentInputSchema = z.object({
   amount: z.coerce
     .number({ error: 'El monto del pago debe ser un número' })
+    .int('El monto del pago no puede tener decimales')
     .positive('El monto del pago debe ser mayor que 0')
     .max(MONEY_MAX, 'El monto del pago es demasiado alto'),
   /** "COP" (default) or "USD". */
@@ -14,6 +15,7 @@ export const paymentInputSchema = z.object({
   /** TRM (COP por USD); obligatoria para pagos en dólares si no hay TRM en vivo. */
   exchangeRate: z.coerce
     .number({ error: 'El precio del dólar debe ser un número' })
+    .int('El precio del dólar no puede tener decimales')
     .positive('El precio del dólar debe ser mayor que 0')
     .max(100_000, 'El precio del dólar es demasiado alto')
     .optional(),

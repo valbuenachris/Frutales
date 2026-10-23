@@ -82,7 +82,7 @@ export interface Project {
   paidAmount: number;
   /** Saldo pendiente (ingreso − abonado); null si no hay venta. */
   balance: number | null;
-  /** Costo de la materia prima (cantidad inicial × precio de compra). */
+  /** Costo de la materia prima ((cantidad inicial ÷ 1000) × precio de compra). */
   purchaseCost: number;
   // Totales derivados (ingreso y ganancia solo existen si hay venta)
   totalCost: number;

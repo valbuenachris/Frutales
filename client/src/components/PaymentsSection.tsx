@@ -304,9 +304,9 @@ export function buildPaymentInitial(
     };
   }
   return {
-    amount: formatInputNumber(payment.amount, 2),
+    amount: formatInputNumber(payment.amount, 0),
     currency: payment.currency,
-    exchangeRate: payment.exchangeRate !== null ? formatInputNumber(payment.exchangeRate, 4) : '',
+    exchangeRate: payment.exchangeRate !== null ? formatInputNumber(payment.exchangeRate, 0) : '',
     note: payment.note ?? '',
     image: payment.image,
     date: payment.date ? toDateInputValue(new Date(payment.date)) : '',
@@ -340,21 +340,31 @@ function PaymentModal({ title, initial, isSaving, errorMessage, onSubmit, onClos
 
   useEffect(() => {
     if (values.currency === 'USD' && values.exchangeRate.trim() === '' && rateQuery.data) {
-      setValues((prev) => ({ ...prev, exchangeRate: String(rateQuery.data.rate) }));
+      setValues((prev) => ({ ...prev, exchangeRate: String(Math.round(rateQuery.data.rate)) }));
     }
   }, [values.currency, values.exchangeRate, rateQuery.data]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!Number.isInteger(parseNumber(values.amount))) {
+      setFormError('El monto del pago no puede tener decimales.');
+      return;
+    }
     if (parseNumber(values.amount) <= 0) {
       setFormError('El monto del pago debe ser mayor que 0.');
       return;
     }
-    if (values.currency === 'USD' && parseNumber(values.exchangeRate) <= 0) {
-      setFormError('El precio del dólar es obligatorio para pagos en dólares.');
-      // Lleva al usuario directo al campo de la TRM.
-      document.getElementById('paymentAmount-rate')?.focus();
-      return;
+    if (values.currency === 'USD') {
+      if (!Number.isInteger(parseNumber(values.exchangeRate))) {
+        setFormError('El precio del dólar no puede tener decimales.');
+        return;
+      }
+      if (parseNumber(values.exchangeRate) <= 0) {
+        setFormError('El precio del dólar es obligatorio para pagos en dólares.');
+        // Lleva al usuario directo al campo de la TRM.
+        document.getElementById('paymentAmount-rate')?.focus();
+        return;
+      }
     }
     setFormError(null);
     onSubmit(values);

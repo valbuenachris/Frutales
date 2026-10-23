@@ -129,13 +129,13 @@ const CALC_CTE = Prisma.raw(`
       p."sellingPrice",
       p."paymentType",
       p."scheduledPaymentDate",
-      (p."initialQty" * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)) AS "purchaseCost",
+      ((p."initialQty" / 1000) * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)) AS "purchaseCost",
       CASE WHEN p."sellingPrice" IS NOT NULL
-        THEN p."netYield" * p."sellingPrice" * COALESCE(p."exchangeRate", 1)
+        THEN (p."netYield" / 1000) * p."sellingPrice" * COALESCE(p."exchangeRate", 1)
       END AS "revenue",
       CASE
         WHEN COUNT(pay."id") = 0 AND p."paymentType" = 'Contado' AND p."sellingPrice" IS NOT NULL
-          THEN p."netYield" * p."sellingPrice" * COALESCE(p."exchangeRate", 1)
+          THEN (p."netYield" / 1000) * p."sellingPrice" * COALESCE(p."exchangeRate", 1)
         ELSE COALESCE(SUM(pay."amount" * COALESCE(pay."exchangeRate", 1)), 0)
       END AS "paidAmount",
       COALESCE((
@@ -223,8 +223,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         WITH "sold" AS (
           SELECT
             date_trunc('month', COALESCE(p."transactionDate", p."createdAt")) AS "monthStart",
-            (p."netYield" * p."sellingPrice" * COALESCE(p."exchangeRate", 1)) AS "revenue",
-            (p."initialQty" * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)) AS "purchaseCost",
+            ((p."netYield" / 1000) * p."sellingPrice" * COALESCE(p."exchangeRate", 1)) AS "revenue",
+            ((p."initialQty" / 1000) * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)) AS "purchaseCost",
             COALESCE((
               SELECT SUM(e."amount" * COALESCE(e."exchangeRate", 1))
               FROM "expenses" e
@@ -248,8 +248,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         WITH "sold" AS (
           SELECT
             btrim(p."productName") AS "name",
-            (p."netYield" * p."sellingPrice" * COALESCE(p."exchangeRate", 1)) AS "revenue",
-            (p."initialQty" * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)
+            ((p."netYield" / 1000) * p."sellingPrice" * COALESCE(p."exchangeRate", 1)) AS "revenue",
+            ((p."initialQty" / 1000) * p."purchasePrice" * COALESCE(p."purchaseExchangeRate", 1)
               + COALESCE((
                   SELECT SUM(e."amount" * COALESCE(e."exchangeRate", 1))
                   FROM "expenses" e

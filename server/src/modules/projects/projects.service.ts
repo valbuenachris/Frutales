@@ -76,7 +76,7 @@ async function buildWriteData(input: ProjectInput): Promise<Prisma.ProjectUnchec
   // value always matches initialQty/reductionPct.
   const netYield =
     overridden && input.netYield !== undefined
-      ? round(input.netYield, QTY_DECIMALS)
+      ? round(input.netYield, 0)
       : computeNetYield(input.initialQty, input.reductionPct);
 
   // Fase 1: purchase currency, TRM (only for USD) and receipt image.

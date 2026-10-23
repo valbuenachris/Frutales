@@ -77,26 +77,25 @@ function toFormValues(project?: Project): ProjectFormValues {
   return {
     name: project.name,
     productName: project.productName,
-    initialQty: formatInputNumber(project.initialQty, 3),
-    purchasePrice: formatInputNumber(project.purchasePrice, 2),
+    initialQty: formatInputNumber(project.initialQty, 0),
+    purchasePrice: formatInputNumber(project.purchasePrice, 0),
     purchaseCurrency: project.purchaseCurrency === 'USD' ? 'USD' : 'COP',
     purchaseExchangeRate:
       project.purchaseExchangeRate !== null
-        ? formatInputNumber(project.purchaseExchangeRate, 4)
+        ? formatInputNumber(project.purchaseExchangeRate, 0)
         : '',
     purchaseImage: project.purchaseImage,
     reductionPct: formatInputNumber(project.reductionPct, 2),
     netYieldOverridden: project.netYieldOverridden,
-    netYield: project.netYieldOverridden ? formatInputNumber(project.netYield, 3) : '',
+    netYield: project.netYieldOverridden ? formatInputNumber(project.netYield, 0) : '',
     buyerName: project.buyerName ?? '',
     buyerContact: project.buyerContact ?? '',
     transactionDate: project.transactionDate
       ? toDateInputValue(new Date(project.transactionDate))
       : todayInputValue(),
-    sellingPrice: project.sellingPrice !== null ? formatInputNumber(project.sellingPrice, 2) : '',
+    sellingPrice: project.sellingPrice !== null ? formatInputNumber(project.sellingPrice, 0) : '',
     currency: project.currency === 'USD' ? 'USD' : 'COP',
-    exchangeRate:
-      project.exchangeRate !== null ? formatInputNumber(project.exchangeRate, 4) : '',
+    exchangeRate: project.exchangeRate !== null ? formatInputNumber(project.exchangeRate, 0) : '',
     saleImage: project.saleImage,
     paymentType: project.paymentType === 'Crédito' ? 'Crédito' : 'Contado',
     scheduledPaymentDate: project.scheduledPaymentDate
@@ -121,22 +120,39 @@ function validate(values: ProjectFormValues): string | null {
   // Fase 1
   if (!values.name.trim()) return 'El nombre del proyecto es obligatorio.';
   if (!values.productName.trim()) return 'El nombre del producto es obligatorio.';
+  if (!Number.isInteger(parseNumber(values.initialQty)))
+    return 'La cantidad inicial no puede tener decimales.';
   if (parseNumber(values.initialQty) <= 0) return 'La cantidad inicial debe ser mayor que 0.';
+  if (!Number.isInteger(parseNumber(values.purchasePrice)))
+    return 'El precio de compra no puede tener decimales.';
   if (parseNumber(values.purchasePrice) < 0) return 'El precio de compra no puede ser negativo.';
-  if (values.purchaseCurrency === 'USD' && parseNumber(values.purchaseExchangeRate) <= 0)
-    return 'El precio del dólar es obligatorio para la compra en dólares.';
+  if (values.purchaseCurrency === 'USD') {
+    if (!Number.isInteger(parseNumber(values.purchaseExchangeRate)))
+      return 'El precio del dólar no puede tener decimales.';
+    if (parseNumber(values.purchaseExchangeRate) <= 0)
+      return 'El precio del dólar es obligatorio para la compra en dólares.';
+  }
   const reduction = parseNumber(values.reductionPct);
   if (reduction < 0 || reduction > 100) return 'La merma debe estar entre 0 y 100.';
-  if (values.netYieldOverridden && parseNumber(values.netYield) < 0)
-    return 'El rendimiento neto no puede ser negativo.';
+  if (values.netYieldOverridden) {
+    if (!Number.isInteger(parseNumber(values.netYield)))
+      return 'El rendimiento neto no puede tener decimales.';
+    if (parseNumber(values.netYield) < 0) return 'El rendimiento neto no puede ser negativo.';
+  }
 
   // Fase 2 (only validated when the sale is being registered)
   if (isSaleActive(values)) {
     if (!values.buyerName.trim()) return 'El nombre del comprador es obligatorio.';
+    if (!Number.isInteger(parseNumber(values.sellingPrice)))
+      return 'El precio de venta no puede tener decimales.';
     if (parseNumber(values.sellingPrice) < 0) return 'El precio de venta no puede ser negativo.';
     if (values.sellingPrice.trim() === '') return 'El precio de venta es obligatorio.';
-    if (values.currency === 'USD' && parseNumber(values.exchangeRate) <= 0)
-      return 'El precio del dólar es obligatorio para ventas en dólares.';
+    if (values.currency === 'USD') {
+      if (!Number.isInteger(parseNumber(values.exchangeRate)))
+        return 'El precio del dólar no puede tener decimales.';
+      if (parseNumber(values.exchangeRate) <= 0)
+        return 'El precio del dólar es obligatorio para ventas en dólares.';
+    }
     if (values.transactionDate === '') return 'La fecha de la transacción es obligatoria.';
     if (values.paymentType === 'Crédito') {
       if (values.scheduledPaymentDate === '')
@@ -238,13 +254,13 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
       values.purchaseExchangeRate.trim() === '' &&
       purchaseRateQuery.data
     ) {
-      patch({ purchaseExchangeRate: String(purchaseRateQuery.data.rate) });
+      patch({ purchaseExchangeRate: String(Math.round(purchaseRateQuery.data.rate)) });
     }
   }, [values.purchaseCurrency, values.purchaseExchangeRate, purchaseRateQuery.data]);
 
   useEffect(() => {
     if (values.currency === 'USD' && values.exchangeRate.trim() === '' && exchangeRateQuery.data) {
-      patch({ exchangeRate: String(exchangeRateQuery.data.rate) });
+      patch({ exchangeRate: String(Math.round(exchangeRateQuery.data.rate)) });
     }
   }, [values.currency, values.exchangeRate, exchangeRateQuery.data]);
 
@@ -276,21 +292,21 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
 
   const summaryRows = [{ label: 'Rendimiento neto', value: formatQty(netYield) }];
   if (netYield > 0 && (totals.totalCost + registeredExpenses) > 0) {
-    // (Costo de compra + gastos) ÷ kg de producto terminado.
+    // (Costo de compra + gastos) ÷ gramo de producto terminado.
     summaryRows.push({
-      label: 'Costo por kg',
-      value: `${formatMoney((totals.totalCost + registeredExpenses) / netYield)} / kg`,
+      label: 'Costo por gramo',
+      value: `${formatMoney((totals.totalCost + registeredExpenses) / netYield)} / g`,
     });
   }
   if (totals.netProfit !== null && netYield > 0) {
     summaryRows.push({
-      label: 'Ganancia neta por kg',
-      value: `${formatMoney(totals.netProfit / netYield)} / kg`,
+      label: 'Ganancia neta por gramo',
+      value: `${formatMoney(totals.netProfit / netYield)} / g`,
     });
   }
   if (values.purchaseCurrency === 'USD') {
     summaryRows.push(
-      { label: 'Compra en dólares', value: formatMoneyUsd(initialQty * purchasePrice) },
+      { label: 'Compra en dólares', value: formatMoneyUsd((initialQty / 1000) * purchasePrice) },
       { label: 'Precio del dólar (compra)', value: formatMoney(purchaseRate) },
     );
   }
@@ -301,7 +317,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
     summaryRows.push(
       {
         label: 'Venta en dólares',
-        value: formatMoneyUsd(netYield * parseNumber(values.sellingPrice)),
+        value: formatMoneyUsd((netYield / 1000) * parseNumber(values.sellingPrice)),
       },
       { label: 'Precio del dólar', value: formatMoney(usdRate) },
     );
@@ -461,7 +477,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                 Materia prima
               </h2>
 
-              <Field label="Cantidad inicial (kg)" htmlFor="initialQty">
+              <Field label="Cantidad inicial (g)" htmlFor="initialQty">
                 <Input
                   id="initialQty"
                   type="text"
@@ -469,7 +485,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                   autoComplete="off"
                   value={values.initialQty}
                   onChange={(e) => patch({ initialQty: e.target.value })}
-                  placeholder="10"
+                  placeholder="10000"
                 />
               </Field>
 
@@ -480,6 +496,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                     ? 'Precio de compra (US$ por kg)'
                     : 'Precio de compra (por kg)'
                 }
+                hint="Precio por kilogramo (1.000 g) de la fruta comprada."
                 amount={values.purchasePrice}
                 onAmountChange={(value) => patch({ purchasePrice: value })}
                 currency={values.purchaseCurrency}
@@ -494,7 +511,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                 onExchangeRateChange={(value) => patch({ purchaseExchangeRate: value })}
                 image={values.purchaseImage}
                 onImageChange={(image) => patch({ purchaseImage: image })}
-                placeholder={values.purchaseCurrency === 'USD' ? '2' : '2500'}
+                placeholder={values.purchaseCurrency === 'USD' ? '0,6' : '4.500.000'}
                 rateInfo={purchaseRateQuery.data}
                 rateLoading={purchaseRateQuery.isPending}
                 rateError={purchaseRateQuery.isError}
@@ -532,7 +549,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                       patch({
                         netYieldOverridden: e.target.checked,
                         // Prefill with the auto value when enabling the override.
-                        netYield: e.target.checked ? formatInputNumber(autoNetYield, 3) : '',
+                        netYield: e.target.checked ? formatInputNumber(autoNetYield, 0) : '',
                       })
                     }
                   />
@@ -542,7 +559,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
               </label>
 
               <Field
-                label="Rendimiento neto (kg)"
+                label="Rendimiento neto (g)"
                 htmlFor="netYield"
                 hint={
                   values.netYieldOverridden
@@ -555,7 +572,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                   type="text"
                   inputMode="decimal"
                   autoComplete="off"
-                  value={values.netYieldOverridden ? values.netYield : formatInputNumber(autoNetYield, 3)}
+                  value={values.netYieldOverridden ? values.netYield : formatInputNumber(autoNetYield, 0)}
                   disabled={!values.netYieldOverridden}
                   onChange={(e) => patch({ netYield: e.target.value })}
                   className={values.netYieldOverridden ? undefined : 'bg-stone-50'}
@@ -623,7 +640,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                     ? 'Precio de venta (US$ por kg de rendimiento neto)'
                     : 'Precio de venta (por kg de rendimiento neto)'
                 }
-                hint="Precio al que vendes el producto procesado."
+                hint="Precio por kilogramo (1.000 g) del producto procesado (rendimiento neto)."
                 amount={values.sellingPrice}
                 onAmountChange={(value) => patch({ sellingPrice: value })}
                 currency={values.currency}
@@ -636,7 +653,7 @@ function ProjectForm({ project, initialPhase }: ProjectFormProps) {
                 onExchangeRateChange={(value) => patch({ exchangeRate: value })}
                 image={values.saleImage}
                 onImageChange={(image) => patch({ saleImage: image })}
-                placeholder={values.currency === 'USD' ? '1.5' : '6000'}
+                placeholder={values.currency === 'USD' ? '1,5' : '15.999.888'}
                 rateInfo={exchangeRateQuery.data}
                 rateLoading={exchangeRateQuery.isPending}
                 rateError={exchangeRateQuery.isError}

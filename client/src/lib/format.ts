@@ -57,8 +57,8 @@ export const formatMoneyCompact = (value: number): string => {
 export const formatInputNumber = (value: number, maxDecimals = 3): string =>
   new Intl.NumberFormat(LOCALE, { maximumFractionDigits: maxDecimals }).format(value);
 
-/** Kilograms, up to three decimals, e.g. "8 kg" / "1.500,5 kg". */
-export const formatQty = (value: number): string => `${qtyFormatter.format(value)} kg`;
+/** Grams, up to three decimals, e.g. "8.000 g" / "1.500,5 g". */
+export const formatQty = (value: number): string => `${qtyFormatter.format(value)} g`;
 
 /** Percentage, up to three decimals, e.g. "20%" / "12,5%". */
 export const formatPct = (value: number): string => `${qtyFormatter.format(value)}%`;

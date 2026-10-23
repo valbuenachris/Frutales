@@ -38,9 +38,8 @@ test.describe('Detalle de proyecto (móvil)', () => {
       data: {
         name,
         productName: 'Piña E2E',
-        processType: 'E2E',
-        initialQty: 5,
-        purchasePrice: 4000,
+        initialQty: 5000,
+        purchasePrice: 4,
         reductionPct: 30,
       },
     });
@@ -62,16 +61,16 @@ test.describe('Detalle de proyecto (móvil)', () => {
       const gastos = page
         .locator('section')
         .filter({ has: page.getByRole('heading', { name: 'Gastos', exact: true }) });
-      const costPerKgRow = page.locator('dt:text-is("Costo por kg de producto") + dd');
+      const costPerGramRow = page.locator('dt:text-is("Costo por gramo") + dd');
       const summaryValue = (label: string) => page.locator(`dt:text-is("${label}") + dd`);
 
       const expenseAmount = 5_000;
       const totalCost = project.purchaseCost + expenseAmount; // totalCost = compra + gastos
-      const costPerKg = (cost: number) => `${money(cost / project.netYield)} / kg`;
+      const costPerGram = (cost: number) => `${money(cost / project.netYield)} / g`;
 
       // Estado inicial: sin gastos y costo total = solo la compra.
       await expect(gastos).toContainText('Sin gastos registrados');
-      await expect(costPerKgRow).toHaveText(costPerKg(project.purchaseCost));
+      await expect(costPerGramRow).toHaveText(costPerGram(project.purchaseCost));
 
       // 2) Abrir el modal de "Gastos" y comprobar que hizo portal a <body>.
       await gastos.getByRole('button', { name: 'Agregar gasto' }).click();
@@ -103,7 +102,7 @@ test.describe('Detalle de proyecto (móvil)', () => {
 
       // 4) El resumen refleja el nuevo totalCost (compra + gastos).
       await expect(summaryValue('Gastos')).toHaveText(money(expenseAmount));
-      await expect(costPerKgRow).toHaveText(costPerKg(totalCost));
+      await expect(costPerGramRow).toHaveText(costPerGram(totalCost));
       // "Total inversión" es solo la compra: no cambia al agregar gastos.
       await expect(summaryValue('Total inversión')).toHaveText(money(project.purchaseCost));
     } finally {

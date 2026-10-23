@@ -86,7 +86,7 @@ export function MoneyField({
           htmlFor={`${id}-rate`}
           hint={
             rateInfo
-              ? `Valor de referencia actual: ${formatMoney(rateInfo.rate)} (${rateInfo.source}). Se guarda con el registro; puedes ajustarlo.`
+              ? `Valor de referencia actual: ${formatMoney(Math.round(rateInfo.rate))} (${rateInfo.source}). Se guarda con el registro; puedes ajustarlo.`
               : rateError
                 ? 'No se pudo obtener automáticamente. Ingresa el valor manualmente.'
                 : rateLoading

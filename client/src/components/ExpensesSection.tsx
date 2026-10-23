@@ -171,11 +171,11 @@ export function ExpensesSection({ projectId, expenses, expensesTotal }: Expenses
                 modal.mode === 'edit'
                   ? {
                       concept: modal.expense.concept,
-                      amount: formatInputNumber(modal.expense.amount, 2),
+                      amount: formatInputNumber(modal.expense.amount, 0),
                       currency: modal.expense.currency,
                       exchangeRate:
                         modal.expense.exchangeRate !== null
-                          ? formatInputNumber(modal.expense.exchangeRate, 4)
+                          ? formatInputNumber(modal.expense.exchangeRate, 0)
                           : '',
                       image: modal.expense.image,
                       date: modal.expense.date
@@ -262,7 +262,7 @@ function ExpenseModal({ title, initial, isSaving, errorMessage, onSubmit, onClos
 
   useEffect(() => {
     if (values.currency === 'USD' && values.exchangeRate.trim() === '' && rateQuery.data) {
-      setValues((prev) => ({ ...prev, exchangeRate: String(rateQuery.data.rate) }));
+      setValues((prev) => ({ ...prev, exchangeRate: String(Math.round(rateQuery.data.rate)) }));
     }
   }, [values.currency, values.exchangeRate, rateQuery.data]);
 
@@ -272,13 +272,23 @@ function ExpenseModal({ title, initial, isSaving, errorMessage, onSubmit, onClos
       setFormError('El concepto del gasto es obligatorio.');
       return;
     }
+    if (!Number.isInteger(parseNumber(values.amount))) {
+      setFormError('El monto del gasto no puede tener decimales.');
+      return;
+    }
     if (parseNumber(values.amount) <= 0) {
       setFormError('El monto del gasto debe ser mayor que 0.');
       return;
     }
-    if (values.currency === 'USD' && parseNumber(values.exchangeRate) <= 0) {
-      setFormError('El precio del dólar es obligatorio para gastos en dólares.');
-      return;
+    if (values.currency === 'USD') {
+      if (!Number.isInteger(parseNumber(values.exchangeRate))) {
+        setFormError('El precio del dólar no puede tener decimales.');
+        return;
+      }
+      if (parseNumber(values.exchangeRate) <= 0) {
+        setFormError('El precio del dólar es obligatorio para gastos en dólares.');
+        return;
+      }
     }
     setFormError(null);
     onSubmit(values);

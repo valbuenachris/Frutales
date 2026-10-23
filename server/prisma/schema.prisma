@@ -48,19 +48,19 @@ model Project {
   name               String // e.g. "Lote 1 de piña"
   productName        String // e.g. "Piña"
   processType        String? // DEPRECATED: sin uso (histórico vaciado en la migración sin_tipo_proceso)
-  initialQty         Decimal  @db.Decimal(12, 3) // kg purchased
-  purchasePrice      Decimal  @db.Decimal(12, 2) // price per kg purchased (in `purchaseCurrency`)
+  initialQty         Decimal  @db.Decimal(12, 3) // grams purchased
+  purchasePrice      Decimal  @db.Decimal(12, 2) // price per kg purchased (integer, in `purchaseCurrency`)
   purchaseCurrency    String?  // "COP" | "USD" — currency of the purchase price; null on legacy rows (treated as COP)
   purchaseExchangeRate Decimal? @db.Decimal(12, 4) // COP per USD captured when the purchase was made in USD
   purchaseImage       String?  // data URL of the purchase receipt (comprobante de compra)
   reductionPct       Decimal  @db.Decimal(5, 2) // % of weight lost during processing
-  netYield           Decimal  @db.Decimal(12, 3) // kg after processing (auto-calculated or manually overridden)
+  netYield           Decimal  @db.Decimal(12, 3) // grams after processing (auto-calculated or manually overridden)
   netYieldOverridden Boolean  @default(false) // true when the user typed a custom net yield
 
   // ---------------------------------------------------------------------------
   // Fase 2: venta (all optional — null until the sale is registered)
   // ---------------------------------------------------------------------------
-  sellingPrice         Decimal?  @db.Decimal(12, 2) // price per kg of net yield (in `currency`)
+  sellingPrice         Decimal?  @db.Decimal(12, 2) // price per kg of net yield (integer, in `currency`)
   currency             String? // "COP" | "USD" — sale currency; null on legacy rows (treated as COP)
   exchangeRate         Decimal?  @db.Decimal(12, 4) // COP per USD captured when the USD sale was registered
   saleImage            String? // data URL of the sale receipt (comprobante de venta)

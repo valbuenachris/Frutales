@@ -189,7 +189,7 @@ export function ProjectDetailsPage() {
         {/* Financial summary */}
         <SummaryCard
           totals={{
-            // "Total inversión" = solo la compra (precio de compra × cantidad comprada).
+            // "Total inversión" = solo la compra ((cantidad inicial ÷ 1000) × precio de compra).
             // "Venta total en pesos" = lo recibido de la venta (normalizado a COP).
             totalCost: project.purchaseCost,
             totalRevenue: project.totalRevenue,
@@ -200,18 +200,18 @@ export function ProjectDetailsPage() {
               ? [{ label: 'Gastos', value: formatMoney(project.expensesTotal) }]
               : []),
             {
-              label: 'Costo por kg',
-              // (Costo de compra + gastos) ÷ cantidad de producto terminado.
+              label: 'Costo por gramo',
+              // (Costo de compra + gastos) ÷ gramo de producto terminado.
               value:
                 project.netYield > 0 && project.purchaseCost + project.expensesTotal > 0
-                  ? `${formatMoney((project.purchaseCost + project.expensesTotal) / project.netYield)} / kg`
+                  ? `${formatMoney((project.purchaseCost + project.expensesTotal) / project.netYield)} / g`
                   : '—',
             },
             ...(project.netProfit !== null && project.netYield > 0
               ? [
                   {
-                    label: 'Ganancia neta por kg',
-                    value: `${formatMoney(project.netProfit / project.netYield)} / kg`,
+                    label: 'Ganancia neta por gramo',
+                    value: `${formatMoney(project.netProfit / project.netYield)} / g`,
                   },
                 ]
               : []),
@@ -223,12 +223,13 @@ export function ProjectDetailsPage() {
 
         {/* Formula reminder */}
         <p className="px-1 text-xs leading-relaxed text-slate-400">
-          Total inversión = cantidad inicial × precio de compra · Costo por kg = (total inversión +
-          gastos) ÷ rendimiento neto · Ganancia neta por kg = ganancia neta ÷ rendimiento neto
+          Total inversión = (cantidad inicial ÷ 1000) × precio de compra · Costo por gramo = (total
+          inversión + gastos) ÷ rendimiento neto · Ganancia neta por gramo = ganancia neta ÷
+          rendimiento neto
           {project.totalRevenue !== null
             ? project.currency === 'USD'
-              ? ' · Ingreso = rendimiento × precio en US$ × TRM (COP/USD) · Ganancia = ingreso − costo − gastos.'
-              : ' · Ingreso = rendimiento neto × precio de venta · Ganancia = ingreso − costo − gastos.'
+              ? ' · Ingreso = (rendimiento neto ÷ 1000) × precio en US$ × TRM (COP/USD) · Ganancia = ingreso − costo − gastos.'
+              : ' · Ingreso = (rendimiento neto ÷ 1000) × precio de venta · Ganancia = ingreso − costo − gastos.'
             : '. El ingreso y la ganancia se calculan al registrar la venta (Fase 2).'}
         </p>
 

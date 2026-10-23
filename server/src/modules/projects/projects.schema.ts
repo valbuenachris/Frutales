@@ -36,8 +36,9 @@ export type SaleCurrency = (typeof SALE_CURRENCIES)[number];
 /**
  * Topes alineados con la capacidad real de las columnas de la base de datos
  * (se aceptan valores grandes, p. ej. abonos de cientos de millones):
- *  - Decimal(12,2) para montos -> hasta 9.999.999.999,99
- *  - Decimal(12,3) para kg    -> hasta 999.999.999,999
+ *  - Decimal(12,2) para montos y precios -> hasta 9.999.999.999,99
+ *  - Decimal(12,3) para gramos           -> hasta 999.999.999,999
+ * El dinero y los gramos son enteros; solo la caída/merma lleva decimales.
  */
 export const MONEY_MAX = 9_999_999_999.99;
 export const QTY_MAX = 999_999_999.999;
@@ -68,10 +69,12 @@ export const projectInputSchema = z
       .max(120, 'El nombre del producto no puede superar los 120 caracteres'),
     initialQty: z.coerce
       .number({ error: 'La cantidad inicial debe ser un número' })
+      .int('La cantidad inicial no puede tener decimales')
       .positive('La cantidad inicial debe ser mayor que 0')
       .max(QTY_MAX, 'La cantidad inicial es demasiado grande'),
     purchasePrice: z.coerce
       .number({ error: 'El precio de compra debe ser un número' })
+      .int('El precio de compra no puede tener decimales')
       .min(0, 'El precio de compra no puede ser negativo')
       .max(MONEY_MAX, 'El precio de compra es demasiado alto'),
     reductionPct: z.coerce
@@ -80,6 +83,7 @@ export const projectInputSchema = z
       .max(100, 'El porcentaje de merma no puede superar el 100%'),
     netYield: z.coerce
       .number({ error: 'El rendimiento neto debe ser un número' })
+      .int('El rendimiento neto no puede tener decimales')
       .min(0, 'El rendimiento neto no puede ser negativo')
       .max(QTY_MAX, 'El rendimiento neto es demasiado grande')
       .optional(),
@@ -93,6 +97,7 @@ export const projectInputSchema = z
       .optional(),
     purchaseExchangeRate: z.coerce
       .number({ error: 'El precio del dólar debe ser un número' })
+      .int('El precio del dólar no puede tener decimales')
       .positive('El precio del dólar debe ser mayor que 0')
       .max(100_000, 'El precio del dólar es demasiado alto')
       .optional(),
@@ -101,6 +106,7 @@ export const projectInputSchema = z
     // ------------------------- Fase 2: venta (opcional) -----------------------
     sellingPrice: z.coerce
       .number({ error: 'El precio de venta debe ser un número' })
+      .int('El precio de venta no puede tener decimales')
       .min(0, 'El precio de venta no puede ser negativo')
       .max(MONEY_MAX, 'El precio de venta es demasiado alto')
       .optional(),
@@ -127,6 +133,7 @@ export const projectInputSchema = z
      */
     exchangeRate: z.coerce
       .number({ error: 'El precio del dólar debe ser un número' })
+      .int('El precio del dólar no puede tener decimales')
       .positive('El precio del dólar debe ser mayor que 0')
       .max(100_000, 'El precio del dólar es demasiado alto')
       .optional(),

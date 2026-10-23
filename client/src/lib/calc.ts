@@ -39,18 +39,21 @@ export function parseNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/** Net yield = initial quantity * (1 - reduction% / 100). */
+/**
+ * Net yield = initial quantity * (1 - reduction% / 100), rounded to whole
+ * grams (only the reduction keeps decimals).
+ */
 export function computeNetYield(initialQty: number, reductionPct: number): number {
-  return round(initialQty * (1 - reductionPct / 100), 3);
+  return round(initialQty * (1 - reductionPct / 100), 0);
 }
 
 /**
  * Cost, and (only when a sale price is provided) revenue and profit.
  * Pass `sellingPrice = null` while Fase 2 is not registered.
  *
- * `totalCost` is ONLY the purchase (initialQty × purchasePrice). Registered
- * expenses (`expensesTotal`) are subtracted from the profit and are summed
- * separately for the per-kg cost line: (totalCost + expensesTotal) / netYield.
+ * `totalCost` is ONLY the purchase ((initialQty ÷ 1000) × purchasePrice).
+ * Registered expenses (`expensesTotal`) are subtracted from the profit and are
+ * summed separately for the per-gram cost line: (totalCost + expensesTotal) / netYield.
  */
 export function computeTotals(
   netYield: number,
@@ -59,11 +62,12 @@ export function computeTotals(
   sellingPrice: number | null,
   expensesTotal = 0,
 ): Totals {
-  const totalCost = round(initialQty * purchasePrice, 2);
+  // Cantidades en gramos, precios por kg: se convierte (÷1000) para el dinero.
+  const totalCost = round((initialQty / 1000) * purchasePrice, 2);
   if (sellingPrice === null) {
     return { totalCost, totalRevenue: null, netProfit: null };
   }
-  const totalRevenue = round(netYield * sellingPrice, 2);
+  const totalRevenue = round((netYield / 1000) * sellingPrice, 2);
   // Profit accounts for the purchase AND the registered expenses.
   return { totalCost, totalRevenue, netProfit: round(totalRevenue - totalCost - expensesTotal, 2) };
 }

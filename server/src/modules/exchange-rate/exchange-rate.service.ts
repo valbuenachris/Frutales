@@ -54,7 +54,8 @@ export async function getUsdCopRate(): Promise<ExchangeRateInfo> {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const rate = parseRate(await response.json());
       if (rate === null) throw new Error('Respuesta inesperada del proveedor');
-      return { rate: round(rate, 4), source: new URL(url).hostname, fetchedAt: new Date().toISOString() };
+      // TRM entera: el dinero no maneja decimales.
+      return { rate: round(rate, 0), source: new URL(url).hostname, fetchedAt: new Date().toISOString() };
     } catch (error) {
       lastError = error;
     }
@@ -69,7 +70,8 @@ export async function getUsdCopRate(): Promise<ExchangeRateInfo> {
  * with a user-facing Spanish message when neither is available.
  */
 export async function resolveUsdCopRate(provided: number | undefined): Promise<number> {
-  if (provided !== undefined) return round(provided, 4);
+  // TRM entera: el dinero no maneja decimales.
+  if (provided !== undefined) return round(provided, 0);
   try {
     return (await getUsdCopRate()).rate;
   } catch {
